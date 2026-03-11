@@ -154,7 +154,10 @@ export default function ScreenerPage() {
   const exportScreenerCSV = () => {
     if (!sortedResults.length) return;
     const headers = ['Symbol', 'Name', 'Price', 'Change %', 'Market Cap', 'P/E', 'Dividend Yield', 'Sector'];
-    const rows = sortedResults.map((s) => [s.symbol, `"${s.name}"`, s.price.toFixed(2), s.changePercent.toFixed(2), s.marketCap, s.peRatio, (parseFloat(s.dividendYield) * 100).toFixed(2) + '%', `"${s.sector}"`].join(','));
+    const rows = sortedResults.map((s) => {
+      const div = parseFloat(s.dividendYield);
+      return [s.symbol, `"${s.name}"`, s.price.toFixed(2), s.changePercent.toFixed(2), s.marketCap, s.peRatio, isNaN(div) ? '0%' : (div * 100).toFixed(2) + '%', `"${s.sector}"`].join(',');
+    });
     const csv = [headers.join(','), ...rows].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);

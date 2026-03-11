@@ -22,7 +22,7 @@ export default function SettingsPage() {
   useEffect(() => {
     const stored = localStorage.getItem('sp-api-keys');
     if (stored) {
-      try { setKeys(JSON.parse(stored)); } catch {}
+      try { setKeys((prev) => ({ ...prev, ...JSON.parse(stored) })); } catch {}
     }
   }, []);
 
