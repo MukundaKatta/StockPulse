@@ -1,7 +1,9 @@
 'use client';
 
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tooltip } from '@/components/ui/tooltip';
 import { formatCurrency, formatLargeNumber, formatVolume } from '@/lib/formatters';
+import { HelpCircle } from 'lucide-react';
 import type { StockQuote, CompanyOverview } from '@/types';
 
 interface KeyMetricsProps {
@@ -66,15 +68,30 @@ export function KeyMetrics({ quote, overview }: KeyMetricsProps) {
           {overview && (
             <>
               <div className="flex justify-between">
-                <span className="text-gray-500">Market Cap</span>
+                <span className="text-gray-500 flex items-center gap-1">
+                  Market Cap
+                  <Tooltip content="Total market value of all outstanding shares">
+                    <HelpCircle className="h-3 w-3 text-gray-600 cursor-help" />
+                  </Tooltip>
+                </span>
                 <span className="font-mono text-gray-300">{formatLargeNumber(parseFloat(overview.MarketCapitalization || '0'))}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">P/E Ratio</span>
+                <span className="text-gray-500 flex items-center gap-1">
+                  P/E Ratio
+                  <Tooltip content="Price-to-Earnings ratio. Compares share price to earnings per share">
+                    <HelpCircle className="h-3 w-3 text-gray-600 cursor-help" />
+                  </Tooltip>
+                </span>
                 <span className="font-mono text-gray-300">{overview.PERatio || '-'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">EPS</span>
+                <span className="text-gray-500 flex items-center gap-1">
+                  EPS
+                  <Tooltip content="Earnings Per Share. Net income divided by outstanding shares">
+                    <HelpCircle className="h-3 w-3 text-gray-600 cursor-help" />
+                  </Tooltip>
+                </span>
                 <span className="font-mono text-gray-300">{overview.EPS || '-'}</span>
               </div>
             </>

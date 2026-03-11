@@ -10,6 +10,7 @@ import { FundamentalPanel } from '@/components/stock/FundamentalPanel';
 import { NewsPanel } from '@/components/stock/NewsPanel';
 import { EarningsPanel } from '@/components/stock/EarningsPanel';
 import { KeyMetrics } from '@/components/stock/KeyMetrics';
+import { StockInsights } from '@/components/stock/StockInsights';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Button } from '@/components/ui/button';
 import { useStockQuote, useStockHistory, useCompanyOverview, useStockNews } from '@/hooks/useStockData';
@@ -114,6 +115,11 @@ export default function StockPage() {
 
       {/* Key Metrics */}
       <KeyMetrics quote={quote} overview={overview} />
+
+      {/* AI Insights */}
+      <ErrorBoundary>
+        <StockInsights quote={quote} overview={overview} indicators={indicators} />
+      </ErrorBoundary>
 
       {/* Tabs */}
       <div className="border-b border-white/[0.06]">

@@ -10,10 +10,20 @@ import {
   Briefcase,
   Bell,
   Search,
-  LineChart,
   ArrowRight,
   Sparkles,
+  Target,
+  BarChart3,
+  Newspaper,
+  GraduationCap,
 } from 'lucide-react';
+
+const GOALS = [
+  { id: 'portfolio', icon: Briefcase, label: 'Track my portfolio', description: 'Monitor investments and P&L' },
+  { id: 'screener', icon: Target, label: 'Find stocks to buy', description: 'Screen and compare opportunities' },
+  { id: 'technicals', icon: BarChart3, label: 'Technical analysis', description: 'Charts, indicators, signals' },
+  { id: 'news', icon: Newspaper, label: 'Follow market news', description: 'Stay informed on moves' },
+] as const;
 
 const STEPS = [
   {
@@ -37,9 +47,9 @@ const STEPS = [
     description: 'Use the command palette (Cmd+K / Ctrl+K) to search for any stock. Get detailed charts, technical indicators, and financial data.',
     features: [
       'Candlestick charts with multiple timeframes',
-      'RSI, MACD, Bollinger Bands, and more',
-      'Earnings history and financial statements',
-      'Latest news and market sentiment',
+      'SMA, Bollinger Band overlays on charts',
+      'AI-powered stock insights and signals',
+      'Side-by-side stock comparison',
     ],
   },
   {
@@ -52,7 +62,7 @@ const STEPS = [
       'Live market value updates',
       'Unrealized P&L tracking',
       'Portfolio allocation breakdown',
-      'Complete trade history',
+      'CSV export for reporting',
     ],
   },
   {
@@ -70,15 +80,29 @@ const STEPS = [
   },
 ];
 
+const TOTAL_STEPS = STEPS.length + 1; // +1 for goals step
+
 export function WelcomeModal() {
   const { onboardingComplete, completeOnboarding } = useAppStore();
   const [step, setStep] = useState(0);
+  const [selectedGoals, setSelectedGoals] = useState<Set<string>>(new Set());
 
   if (onboardingComplete) return null;
 
-  const current = STEPS[step];
-  const isLast = step === STEPS.length - 1;
-  const Icon = current.icon;
+  const isGoalsStep = step === 1;
+  const stepsIdx = step === 0 ? 0 : step > 1 ? step - 1 : -1;
+  const current = !isGoalsStep && stepsIdx >= 0 ? STEPS[stepsIdx] : null;
+  const isLast = step === TOTAL_STEPS - 1;
+  const Icon = current?.icon ?? Target;
+
+  const toggleGoal = (id: string) => {
+    setSelectedGoals((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   return (
     <AnimatePresence>
@@ -97,7 +121,7 @@ export function WelcomeModal() {
         >
           {/* Step indicator */}
           <div className="flex items-center justify-center gap-2 mb-6">
-            {STEPS.map((_, i) => (
+            {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
               <div
                 key={i}
                 className={cn(
@@ -108,38 +132,83 @@ export function WelcomeModal() {
             ))}
           </div>
 
-          {/* Icon */}
-          <div className="flex justify-center mb-5">
-            <div className={cn('flex h-16 w-16 items-center justify-center rounded-2xl', current.iconBg)}>
-              <Icon className={cn('h-8 w-8', current.iconColor)} />
-            </div>
-          </div>
-
-          {/* Content */}
-          <h2 className="text-center font-display text-xl sm:text-2xl font-bold text-white mb-2">
-            {current.title}
-          </h2>
-          <p className="text-center text-sm text-gray-400 mb-6 max-w-sm mx-auto">
-            {current.description}
-          </p>
-
-          {/* Features */}
-          <div className="space-y-2.5 mb-8">
-            {current.features.map((feature, i) => (
-              <motion.div
-                key={feature}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.1 }}
-                className="flex items-center gap-3 rounded-lg bg-white/[0.03] px-4 py-2.5"
-              >
-                <div className={cn('flex h-5 w-5 items-center justify-center rounded-full text-xs', current.iconBg, current.iconColor)}>
-                  {i + 1}
+          {isGoalsStep ? (
+            <>
+              {/* Goals step */}
+              <div className="flex justify-center mb-5">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-500/10">
+                  <Target className="h-8 w-8 text-violet-400" />
                 </div>
-                <span className="text-sm text-gray-300">{feature}</span>
-              </motion.div>
-            ))}
-          </div>
+              </div>
+              <h2 className="text-center font-display text-xl sm:text-2xl font-bold text-white mb-2">
+                What brings you here?
+              </h2>
+              <p className="text-center text-sm text-gray-400 mb-6">
+                Select your interests so we can personalize your experience
+              </p>
+              <div className="space-y-2.5 mb-8">
+                {GOALS.map((goal) => {
+                  const GoalIcon = goal.icon;
+                  const selected = selectedGoals.has(goal.id);
+                  return (
+                    <button
+                      key={goal.id}
+                      onClick={() => toggleGoal(goal.id)}
+                      className={cn(
+                        'flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left transition-all border',
+                        selected
+                          ? 'bg-indigo-500/10 border-indigo-500/30 text-white'
+                          : 'bg-white/[0.02] border-white/[0.04] text-gray-400 hover:bg-white/[0.04]'
+                      )}
+                    >
+                      <GoalIcon className={cn('h-5 w-5 shrink-0', selected ? 'text-indigo-400' : 'text-gray-500')} />
+                      <div className="flex-1">
+                        <div className="text-sm font-medium">{goal.label}</div>
+                        <div className="text-xs text-gray-500">{goal.description}</div>
+                      </div>
+                      <div className={cn(
+                        'h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all',
+                        selected ? 'border-indigo-400 bg-indigo-500' : 'border-gray-600'
+                      )}>
+                        {selected && <span className="text-white text-xs">✓</span>}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Feature steps */}
+              <div className="flex justify-center mb-5">
+                <div className={cn('flex h-16 w-16 items-center justify-center rounded-2xl', current!.iconBg)}>
+                  <Icon className={cn('h-8 w-8', current!.iconColor)} />
+                </div>
+              </div>
+              <h2 className="text-center font-display text-xl sm:text-2xl font-bold text-white mb-2">
+                {current!.title}
+              </h2>
+              <p className="text-center text-sm text-gray-400 mb-6 max-w-sm mx-auto">
+                {current!.description}
+              </p>
+              <div className="space-y-2.5 mb-8">
+                {current!.features.map((feature, i) => (
+                  <motion.div
+                    key={feature}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    className="flex items-center gap-3 rounded-lg bg-white/[0.03] px-4 py-2.5"
+                  >
+                    <div className={cn('flex h-5 w-5 items-center justify-center rounded-full text-xs', current!.iconBg, current!.iconColor)}>
+                      {i + 1}
+                    </div>
+                    <span className="text-sm text-gray-300">{feature}</span>
+                  </motion.div>
+                ))}
+              </div>
+            </>
+          )}
 
           {/* Actions */}
           <div className="flex items-center justify-between gap-3">
