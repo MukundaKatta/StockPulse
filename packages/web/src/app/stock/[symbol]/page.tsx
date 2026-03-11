@@ -3,22 +3,24 @@
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { toast } from 'sonner';
 import { CandlestickChart } from '@/components/charts/CandlestickChart';
 import { StockHeader } from '@/components/stock/StockHeader';
 import { TechnicalPanel } from '@/components/stock/TechnicalPanel';
 import { FundamentalPanel } from '@/components/stock/FundamentalPanel';
 import { NewsPanel } from '@/components/stock/NewsPanel';
+import { EarningsPanel } from '@/components/stock/EarningsPanel';
 import { KeyMetrics } from '@/components/stock/KeyMetrics';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Button } from '@/components/ui/button';
 import { useStockQuote, useStockHistory, useCompanyOverview, useStockNews } from '@/hooks/useStockData';
 import { useTechnicalIndicators } from '@/hooks/useTechnicals';
 import { useWatchlistStore } from '@/stores/watchlistStore';
 import { ChartSkeleton, CardSkeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/formatters';
-import { Star, StarOff } from 'lucide-react';
+import { Star, StarOff, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 
-const TABS = ['Technical', 'Fundamental', 'News'] as const;
+const TABS = ['Technical', 'Fundamental', 'Earnings', 'News'] as const;
 type Tab = typeof TABS[number];
 
 export default function StockPage() {
@@ -63,6 +65,10 @@ export default function StockPage() {
           <h2 className="text-xl font-bold text-white">Stock Not Found</h2>
           <p className="mt-2 text-gray-500">Could not load data for {symbol}</p>
           <p className="mt-1 text-xs text-gray-600">Check if API keys are configured in Settings</p>
+          <Link href="/" className="mt-4 inline-flex items-center gap-1 text-sm text-indigo-400 hover:text-indigo-300">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </Link>
         </div>
       </div>
     );
@@ -89,24 +95,26 @@ export default function StockPage() {
       </div>
 
       {/* Chart */}
-      <div className="rounded-xl border border-white/[0.06] bg-[#12121a] p-3 sm:p-4">
-        {historyLoading ? (
-          <ChartSkeleton />
-        ) : history ? (
-          <CandlestickChart
-            data={history}
-            currentTimeframe={timeframe}
-            onTimeframeChange={setTimeframe}
-          />
-        ) : null}
-      </div>
+      <ErrorBoundary>
+        <div className="rounded-xl border border-white/[0.06] bg-[#12121a] p-3 sm:p-4">
+          {historyLoading ? (
+            <ChartSkeleton />
+          ) : history ? (
+            <CandlestickChart
+              data={history}
+              currentTimeframe={timeframe}
+              onTimeframeChange={setTimeframe}
+            />
+          ) : null}
+        </div>
+      </ErrorBoundary>
 
       {/* Key Metrics */}
       <KeyMetrics quote={quote} overview={overview} />
 
       {/* Tabs */}
       <div className="border-b border-white/[0.06]">
-        <div className="flex gap-1 overflow-x-auto">
+        <div className="flex gap-1 overflow-x-auto" role="tablist">
           {TABS.map((tab) => (
             <button
               key={tab}
@@ -131,17 +139,22 @@ export default function StockPage() {
       </div>
 
       {/* Tab content */}
-      <div>
-        {activeTab === 'Technical' && indicators && (
-          <TechnicalPanel indicators={indicators} />
-        )}
-        {activeTab === 'Fundamental' && overview && (
-          <FundamentalPanel overview={overview} />
-        )}
-        {activeTab === 'News' && (
-          <NewsPanel news={news || []} />
-        )}
-      </div>
+      <ErrorBoundary>
+        <div>
+          {activeTab === 'Technical' && indicators && (
+            <TechnicalPanel indicators={indicators} />
+          )}
+          {activeTab === 'Fundamental' && overview && (
+            <FundamentalPanel overview={overview} />
+          )}
+          {activeTab === 'Earnings' && symbol && (
+            <EarningsPanel symbol={symbol} />
+          )}
+          {activeTab === 'News' && (
+            <NewsPanel news={news || []} />
+          )}
+        </div>
+      </ErrorBoundary>
     </motion.div>
   );
 }

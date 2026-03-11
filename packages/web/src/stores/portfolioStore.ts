@@ -3,12 +3,13 @@
 import { create } from 'zustand';
 import { toast } from 'sonner';
 import api from '@/lib/api';
-import type { Portfolio, Holding } from '@/types';
+import type { Portfolio, Holding, Trade } from '@/types';
 
 interface PortfolioState {
   portfolios: Portfolio[];
   activePortfolioId: string | null;
   holdings: Holding[];
+  trades: Trade[];
   loading: boolean;
   error: string | null;
   fetchPortfolios: () => Promise<void>;
@@ -30,6 +31,7 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
   portfolios: [],
   activePortfolioId: null,
   holdings: [],
+  trades: [],
   loading: false,
   error: null,
 
@@ -54,7 +56,7 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
   fetchHoldings: async (portfolioId) => {
     try {
       const { data } = await api.get(`/api/portfolio/${portfolioId}`);
-      set({ holdings: data.holdings });
+      set({ holdings: data.holdings, trades: data.portfolio?.trades || [] });
     } catch (err) {
       toast.error('Failed to load holdings');
     }

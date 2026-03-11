@@ -3,16 +3,20 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { usePortfolioStore } from '@/stores/portfolioStore';
+import { usePortfolioQuotes } from '@/hooks/usePortfolioQuotes';
 import { HoldingsTable } from '@/components/portfolio/HoldingsTable';
 import { PerformanceCard } from '@/components/portfolio/PerformanceCard';
 import { AllocationChart } from '@/components/portfolio/AllocationChart';
+import { TradeHistory } from '@/components/portfolio/TradeHistory';
 import { AddTradeModal } from '@/components/portfolio/AddTradeModal';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus } from 'lucide-react';
 
 export default function PortfolioPage() {
-  const { portfolios, activePortfolioId, holdings, fetchPortfolios, fetchHoldings } = usePortfolioStore();
+  const { portfolios, activePortfolioId, holdings, trades, fetchPortfolios, fetchHoldings } = usePortfolioStore();
+  const { quotes } = usePortfolioQuotes(holdings);
   const [showTradeModal, setShowTradeModal] = useState(false);
 
   useEffect(() => {
@@ -44,7 +48,9 @@ export default function PortfolioPage() {
       </div>
 
       {/* Performance cards */}
-      <PerformanceCard holdings={holdings} />
+      <ErrorBoundary>
+        <PerformanceCard holdings={holdings} quotes={quotes} />
+      </ErrorBoundary>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
         {/* Holdings table */}
@@ -53,7 +59,7 @@ export default function PortfolioPage() {
             <CardHeader>
               <CardTitle>Holdings</CardTitle>
             </CardHeader>
-            <HoldingsTable holdings={holdings} />
+            <HoldingsTable holdings={holdings} quotes={quotes} />
           </Card>
         </div>
 
@@ -62,6 +68,13 @@ export default function PortfolioPage() {
           <AllocationChart holdings={holdings} />
         </div>
       </div>
+
+      {/* Trade History */}
+      {activePortfolioId && (
+        <ErrorBoundary>
+          <TradeHistory trades={trades} portfolioId={activePortfolioId} />
+        </ErrorBoundary>
+      )}
 
       {/* Add Trade Modal */}
       {activePortfolioId && (

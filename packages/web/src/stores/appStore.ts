@@ -12,6 +12,7 @@ interface AppState {
   mobileSidebarOpen: boolean;
   commandPaletteOpen: boolean;
   selectedSymbol: string | null;
+  onboardingComplete: boolean;
   setUser: (user: User | null) => void;
   setToken: (token: string | null) => void;
   setTheme: (theme: 'dark' | 'light') => void;
@@ -22,6 +23,7 @@ interface AppState {
   toggleCommandPalette: () => void;
   setCommandPaletteOpen: (open: boolean) => void;
   setSelectedSymbol: (symbol: string | null) => void;
+  completeOnboarding: () => void;
   logout: () => void;
 }
 
@@ -35,6 +37,7 @@ export const useAppStore = create<AppState>()(
       mobileSidebarOpen: false,
       commandPaletteOpen: false,
       selectedSymbol: null,
+      onboardingComplete: false,
       setUser: (user) => set({ user }),
       setToken: (token) => {
         if (token) localStorage.setItem('sp-token', token);
@@ -49,6 +52,7 @@ export const useAppStore = create<AppState>()(
       toggleCommandPalette: () => set((s) => ({ commandPaletteOpen: !s.commandPaletteOpen })),
       setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
       setSelectedSymbol: (symbol) => set({ selectedSymbol: symbol }),
+      completeOnboarding: () => set({ onboardingComplete: true }),
       logout: () => {
         localStorage.removeItem('sp-token');
         set({ user: null, token: null });
@@ -61,6 +65,7 @@ export const useAppStore = create<AppState>()(
         sidebarOpen: state.sidebarOpen,
         token: state.token,
         user: state.user,
+        onboardingComplete: state.onboardingComplete,
       }),
     }
   )

@@ -4,6 +4,7 @@ import { Providers } from "@/components/Providers";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopBar } from "@/components/layout/TopBar";
 import { CommandPalette } from "@/components/layout/CommandPalette";
+import { WelcomeModal } from "@/components/onboarding/WelcomeModal";
 
 export const metadata: Metadata = {
   title: "StockPulse — Institutional-Grade Stock Analysis",
@@ -36,6 +37,7 @@ export default function RootLayout({
             </div>
           </div>
           <CommandPalette />
+          <WelcomeModal />
         </Providers>
       </body>
     </html>
