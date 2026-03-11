@@ -1,0 +1,102 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  portfolios   Portfolio[]
+  watchlists   Watchlist[]
+  settings     UserSettings?
+}
+
+model UserSettings {
+  id              String  @id @default(cuid())
+  userId          String  @unique
+  user            User    @relation(fields: [userId], references: [id])
+  alphaVantageKey String?
+  finnhubKey      String?
+  fmpKey          String?
+  theme           String  @default("dark")
+  defaultChart    String  @default("candlestick")
+}
+
+model Portfolio {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  name      String   @default("My Portfolio")
+  trades    Trade[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Trade {
+  id          String    @id @default(cuid())
+  portfolioId String
+  portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  symbol      String
+  type        TradeType
+  quantity    Float
+  price       Float
+  fee         Float     @default(0)
+  date        DateTime
+  notes       String?
+  createdAt   DateTime  @default(now())
+
+  @@index([portfolioId, symbol])
+  @@index([symbol])
+}
+
+enum TradeType {
+  BUY
+  SELL
+}
+
+model Watchlist {
+  id        String          @id @default(cuid())
+  userId    String
+  user      User            @relation(fields: [userId], references: [id])
+  name      String          @default("My Watchlist")
+  items     WatchlistItem[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+}
+
+model WatchlistItem {
+  id          String    @id @default(cuid())
+  watchlistId String
+  watchlist   Watchlist @relation(fields: [watchlistId], references: [id], onDelete: Cascade)
+  symbol      String
+  addedAt     DateTime  @default(now())
+  notes       String?
+
+  @@unique([watchlistId, symbol])
+}
+
+model PriceCache {
+  id        String   @id @default(cuid())
+  symbol    String
+  data      Json
+  interval  String
+  fetchedAt DateTime @default(now())
+
+  @@unique([symbol, interval])
+  @@index([symbol])
+}
+
+model FundamentalCache {
+  id        String   @id @default(cuid())
+  symbol    String   @unique
+  data      Json
+  fetchedAt DateTime @default(now())
+}
