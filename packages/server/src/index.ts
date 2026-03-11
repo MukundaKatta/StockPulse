@@ -29,7 +29,12 @@ const server = createServer(app);
 
 // Middleware
 app.use(helmet());
-app.use(cors({ origin: env.NODE_ENV === 'production' ? false : ['http://localhost:3000'] }));
+app.use(cors({
+  origin: env.NODE_ENV === 'production'
+    ? (process.env.FRONTEND_URL || 'https://stockpulse.app')
+    : ['http://localhost:3000'],
+  credentials: true,
+}));
 app.use(compression());
 app.use(express.json());
 app.use(rateLimiter(200, 60));

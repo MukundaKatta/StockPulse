@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
-import { formatCurrency, formatLargeNumber, cn } from '@/lib/formatters';
+import { formatLargeNumber } from '@/lib/formatters';
 import type { CompanyOverview } from '@/types';
 
 interface FundamentalPanelProps {
@@ -28,7 +28,7 @@ export function FundamentalPanel({ overview }: FundamentalPanelProps) {
         <CardHeader>
           <CardTitle>Valuation</CardTitle>
         </CardHeader>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           <MetricCard label="P/E Ratio" value={overview.PERatio} />
           <MetricCard label="Forward P/E" value={overview.ForwardPE} />
           <MetricCard label="PEG Ratio" value={overview.PEGRatio} />
@@ -43,7 +43,7 @@ export function FundamentalPanel({ overview }: FundamentalPanelProps) {
         <CardHeader>
           <CardTitle>Profitability</CardTitle>
         </CardHeader>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           <MetricCard label="Profit Margin" value={overview.ProfitMargin} suffix="%" />
           <MetricCard label="Operating Margin" value={overview.OperatingMarginTTM} suffix="%" />
           <MetricCard label="ROE" value={overview.ReturnOnEquityTTM} suffix="%" />
@@ -58,7 +58,7 @@ export function FundamentalPanel({ overview }: FundamentalPanelProps) {
         <CardHeader>
           <CardTitle>Key Statistics</CardTitle>
         </CardHeader>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           <MetricCard label="Market Cap" value={formatLargeNumber(parseFloat(overview.MarketCapitalization || '0'))} />
           <MetricCard label="52W High" value={overview['52WeekHigh']} />
           <MetricCard label="52W Low" value={overview['52WeekLow']} />

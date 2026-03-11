@@ -18,6 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
         <link
           href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
           rel="stylesheet"
@@ -27,9 +28,9 @@ export default function RootLayout({
         <Providers>
           <div className="flex h-screen overflow-hidden">
             <Sidebar />
-            <div className="flex flex-1 flex-col overflow-hidden">
+            <div className="flex flex-1 flex-col overflow-hidden min-w-0">
               <TopBar />
-              <main className="flex-1 overflow-y-auto p-6">
+              <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
                 {children}
               </main>
             </div>

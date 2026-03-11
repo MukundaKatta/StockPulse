@@ -66,6 +66,13 @@ router.post('/:id/items', async (req: Request, res: Response) => {
   if (!watchlist) throw new AppError(404, 'Watchlist not found');
 
   const { symbol, notes } = addItemSchema.parse(req.body);
+
+  // Check for duplicate
+  const existing = await prisma.watchlistItem.findFirst({
+    where: { watchlistId: watchlist.id, symbol },
+  });
+  if (existing) throw new AppError(409, `${symbol} is already in this watchlist`);
+
   const item = await prisma.watchlistItem.create({
     data: { symbol, notes, watchlistId: watchlist.id },
   });
@@ -74,7 +81,19 @@ router.post('/:id/items', async (req: Request, res: Response) => {
 
 // Remove item from watchlist
 router.delete('/:id/items/:itemId', async (req: Request, res: Response) => {
+  const id = req.params.id as string;
   const itemId = req.params.itemId as string;
+
+  const watchlist = await prisma.watchlist.findFirst({
+    where: { id, userId: req.user!.userId },
+  });
+  if (!watchlist) throw new AppError(404, 'Watchlist not found');
+
+  const item = await prisma.watchlistItem.findFirst({
+    where: { id: itemId, watchlistId: watchlist.id },
+  });
+  if (!item) throw new AppError(404, 'Item not found');
+
   await prisma.watchlistItem.delete({ where: { id: itemId } });
   res.json({ message: 'Item removed' });
 });

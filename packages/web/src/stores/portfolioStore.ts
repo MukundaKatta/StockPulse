@@ -1,6 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
+import { toast } from 'sonner';
 import api from '@/lib/api';
 import type { Portfolio, Holding } from '@/types';
 
@@ -9,6 +10,7 @@ interface PortfolioState {
   activePortfolioId: string | null;
   holdings: Holding[];
   loading: boolean;
+  error: string | null;
   fetchPortfolios: () => Promise<void>;
   fetchHoldings: (portfolioId: string) => Promise<void>;
   addTrade: (portfolioId: string, trade: {
@@ -29,9 +31,10 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
   activePortfolioId: null,
   holdings: [],
   loading: false,
+  error: null,
 
   fetchPortfolios: async () => {
-    set({ loading: true });
+    set({ loading: true, error: null });
     try {
       const { data } = await api.get('/api/portfolio');
       const portfolios = data.portfolios;
@@ -40,7 +43,9 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
         activePortfolioId: get().activePortfolioId || portfolios[0]?.id || null,
       });
     } catch (err) {
-      console.error('Failed to fetch portfolios:', err);
+      const message = 'Failed to load portfolios';
+      set({ error: message });
+      toast.error(message);
     } finally {
       set({ loading: false });
     }
@@ -51,28 +56,22 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
       const { data } = await api.get(`/api/portfolio/${portfolioId}`);
       set({ holdings: data.holdings });
     } catch (err) {
-      console.error('Failed to fetch holdings:', err);
+      toast.error('Failed to load holdings');
     }
   },
 
   addTrade: async (portfolioId, trade) => {
-    try {
-      await api.post(`/api/portfolio/${portfolioId}/trades`, trade);
-      await get().fetchHoldings(portfolioId);
-      await get().fetchPortfolios();
-    } catch (err) {
-      console.error('Failed to add trade:', err);
-    }
+    await api.post(`/api/portfolio/${portfolioId}/trades`, trade);
+    toast.success(`${trade.type} ${trade.quantity} ${trade.symbol} added`);
+    await get().fetchHoldings(portfolioId);
+    await get().fetchPortfolios();
   },
 
   deleteTrade: async (portfolioId, tradeId) => {
-    try {
-      await api.delete(`/api/portfolio/${portfolioId}/trades/${tradeId}`);
-      await get().fetchHoldings(portfolioId);
-      await get().fetchPortfolios();
-    } catch (err) {
-      console.error('Failed to delete trade:', err);
-    }
+    await api.delete(`/api/portfolio/${portfolioId}/trades/${tradeId}`);
+    toast.success('Trade deleted');
+    await get().fetchHoldings(portfolioId);
+    await get().fetchPortfolios();
   },
 
   setActivePortfolio: (id) => set({ activePortfolioId: id }),

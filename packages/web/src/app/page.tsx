@@ -21,19 +21,19 @@ export default function DashboardPage() {
   const { setCommandPaletteOpen } = useAppStore();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Welcome header */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-br from-[#12121a] to-[#1a1a2e] p-8"
+        className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-br from-[#12121a] to-[#1a1a2e] p-5 sm:p-8"
       >
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(99,102,241,0.15)_0%,transparent_50%)]" />
         <div className="relative">
-          <h1 className="font-display text-3xl font-bold text-white">
+          <h1 className="font-display text-xl sm:text-3xl font-bold text-white">
             Welcome to StockPulse
           </h1>
-          <p className="mt-2 max-w-lg text-gray-400">
+          <p className="mt-2 max-w-lg text-sm text-gray-400">
             Institutional-grade stock analysis with real-time data, technical indicators, and portfolio tracking.
           </p>
           <button
@@ -42,21 +42,21 @@ export default function DashboardPage() {
           >
             <TrendingUp className="h-4 w-4" />
             Search Stocks
-            <kbd className="ml-2 rounded border border-white/20 bg-white/10 px-1.5 py-0.5 text-[10px]">⌘K</kbd>
+            <kbd className="ml-2 hidden sm:inline rounded border border-white/20 bg-white/10 px-1.5 py-0.5 text-[10px]">⌘K</kbd>
           </button>
         </div>
       </motion.div>
 
-      <div className="grid grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
         {/* Main content */}
-        <div className="col-span-9 space-y-6">
+        <div className="lg:col-span-9 space-y-4 sm:space-y-6">
           {/* Featured stocks */}
           <div>
             <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-400">
               <TrendingUp className="h-4 w-4" />
               Popular Stocks
             </h2>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {FEATURED_STOCKS.map((stock) => (
                 <PriceCard key={stock.symbol} symbol={stock.symbol} name={stock.name} />
               ))}
@@ -64,7 +64,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Quick links */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Link href="/portfolio">
               <Card hover className="cursor-pointer">
                 <div className="flex items-center gap-3">
@@ -97,7 +97,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Watchlist sidebar */}
-        <div className="col-span-3">
+        <div className="lg:col-span-3">
           <WatchlistSidebar />
         </div>
       </div>

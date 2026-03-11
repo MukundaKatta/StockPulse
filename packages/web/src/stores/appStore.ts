@@ -9,12 +9,16 @@ interface AppState {
   token: string | null;
   theme: 'dark' | 'light';
   sidebarOpen: boolean;
+  mobileSidebarOpen: boolean;
   commandPaletteOpen: boolean;
   selectedSymbol: string | null;
   setUser: (user: User | null) => void;
   setToken: (token: string | null) => void;
+  setTheme: (theme: 'dark' | 'light') => void;
+  toggleTheme: () => void;
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
+  setMobileSidebarOpen: (open: boolean) => void;
   toggleCommandPalette: () => void;
   setCommandPaletteOpen: (open: boolean) => void;
   setSelectedSymbol: (symbol: string | null) => void;
@@ -28,6 +32,7 @@ export const useAppStore = create<AppState>()(
       token: null,
       theme: 'dark',
       sidebarOpen: true,
+      mobileSidebarOpen: false,
       commandPaletteOpen: false,
       selectedSymbol: null,
       setUser: (user) => set({ user }),
@@ -36,8 +41,11 @@ export const useAppStore = create<AppState>()(
         else localStorage.removeItem('sp-token');
         set({ token });
       },
+      setTheme: (theme) => set({ theme }),
+      toggleTheme: () => set((s) => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
       toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
+      setMobileSidebarOpen: (open) => set({ mobileSidebarOpen: open }),
       toggleCommandPalette: () => set((s) => ({ commandPaletteOpen: !s.commandPaletteOpen })),
       setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
       setSelectedSymbol: (symbol) => set({ selectedSymbol: symbol }),

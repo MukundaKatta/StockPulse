@@ -1,6 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
+import { toast } from 'sonner';
 import api from '@/lib/api';
 import type { Watchlist } from '@/types';
 
@@ -12,6 +13,7 @@ interface WatchlistState {
   addSymbol: (watchlistId: string, symbol: string) => Promise<void>;
   removeItem: (watchlistId: string, itemId: string) => Promise<void>;
   createWatchlist: (name: string) => Promise<void>;
+  deleteWatchlist: (watchlistId: string) => Promise<void>;
   setActiveWatchlist: (id: string) => void;
 }
 
@@ -30,7 +32,7 @@ export const useWatchlistStore = create<WatchlistState>((set, get) => ({
         activeWatchlistId: get().activeWatchlistId || watchlists[0]?.id || null,
       });
     } catch (err) {
-      console.error('Failed to fetch watchlists:', err);
+      toast.error('Failed to load watchlists');
     } finally {
       set({ loading: false });
     }
@@ -39,27 +41,42 @@ export const useWatchlistStore = create<WatchlistState>((set, get) => ({
   addSymbol: async (watchlistId, symbol) => {
     try {
       await api.post(`/api/watchlist/${watchlistId}/items`, { symbol });
+      toast.success(`${symbol} added to watchlist`);
       await get().fetchWatchlists();
-    } catch (err) {
-      console.error('Failed to add symbol:', err);
+    } catch (err: any) {
+      const message = err?.response?.data?.message || 'Failed to add symbol';
+      toast.error(message);
     }
   },
 
   removeItem: async (watchlistId, itemId) => {
     try {
       await api.delete(`/api/watchlist/${watchlistId}/items/${itemId}`);
+      toast.success('Removed from watchlist');
       await get().fetchWatchlists();
     } catch (err) {
-      console.error('Failed to remove item:', err);
+      toast.error('Failed to remove item');
     }
   },
 
   createWatchlist: async (name) => {
     try {
       await api.post('/api/watchlist', { name });
+      toast.success(`Watchlist "${name}" created`);
       await get().fetchWatchlists();
     } catch (err) {
-      console.error('Failed to create watchlist:', err);
+      toast.error('Failed to create watchlist');
+    }
+  },
+
+  deleteWatchlist: async (watchlistId) => {
+    try {
+      await api.delete(`/api/watchlist/${watchlistId}`);
+      toast.success('Watchlist deleted');
+      set({ activeWatchlistId: null });
+      await get().fetchWatchlists();
+    } catch (err) {
+      toast.error('Failed to delete watchlist');
     }
   },
 

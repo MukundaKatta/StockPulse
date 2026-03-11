@@ -8,8 +8,11 @@ let io: Server;
 export function initSocketIO(httpServer: HttpServer): Server {
   io = new Server(httpServer, {
     cors: {
-      origin: process.env.NODE_ENV === 'production' ? false : ['http://localhost:3000'],
+      origin: env.NODE_ENV === 'production'
+        ? (process.env.FRONTEND_URL || 'https://stockpulse.app')
+        : ['http://localhost:3000'],
       methods: ['GET', 'POST'],
+      credentials: true,
     },
     transports: ['websocket', 'polling'],
   });
@@ -24,7 +27,6 @@ export function initSocketIO(httpServer: HttpServer): Server {
   sub.on('message', (_channel, message) => {
     try {
       const data = JSON.parse(message);
-      // Emit to room for this specific symbol
       io.to(`stock:${data.symbol}`).emit('price-update', data);
     } catch {
       // ignore parse errors
@@ -35,14 +37,20 @@ export function initSocketIO(httpServer: HttpServer): Server {
     console.log(`Client connected: ${socket.id}`);
 
     socket.on('subscribe', (symbols: string[]) => {
-      for (const symbol of symbols) {
-        socket.join(`stock:${symbol.toUpperCase()}`);
+      if (!Array.isArray(symbols)) return;
+      for (const symbol of symbols.slice(0, 50)) {
+        if (typeof symbol === 'string') {
+          socket.join(`stock:${symbol.toUpperCase()}`);
+        }
       }
     });
 
     socket.on('unsubscribe', (symbols: string[]) => {
+      if (!Array.isArray(symbols)) return;
       for (const symbol of symbols) {
-        socket.leave(`stock:${symbol.toUpperCase()}`);
+        if (typeof symbol === 'string') {
+          socket.leave(`stock:${symbol.toUpperCase()}`);
+        }
       }
     });
 

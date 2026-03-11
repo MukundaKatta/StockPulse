@@ -111,6 +111,12 @@ router.delete('/:id/trades/:tradeId', async (req: Request, res: Response) => {
   });
   if (!portfolio) throw new AppError(404, 'Portfolio not found');
 
+  // Verify trade belongs to this portfolio
+  const trade = await prisma.trade.findFirst({
+    where: { id: tradeId, portfolioId: portfolio.id },
+  });
+  if (!trade) throw new AppError(404, 'Trade not found');
+
   await prisma.trade.delete({ where: { id: tradeId } });
   res.json({ message: 'Trade deleted' });
 });

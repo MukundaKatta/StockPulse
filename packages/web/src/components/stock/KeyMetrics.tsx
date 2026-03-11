@@ -28,7 +28,7 @@ export function KeyMetrics({ quote, overview }: KeyMetricsProps) {
               <span>52W Low: <span className="font-mono text-gray-400">{formatCurrency(weekLow)}</span></span>
               <span>52W High: <span className="font-mono text-gray-400">{formatCurrency(weekHigh)}</span></span>
             </div>
-            <div className="relative h-2 rounded-full bg-white/5">
+            <div className="relative h-2 rounded-full bg-white/5" role="progressbar" aria-valuenow={Math.round(positionPct)} aria-valuemin={0} aria-valuemax={100}>
               <div
                 className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-red-500 via-amber-500 to-green-500"
                 style={{ width: `${Math.min(Math.max(positionPct, 0), 100)}%` }}
@@ -42,7 +42,7 @@ export function KeyMetrics({ quote, overview }: KeyMetricsProps) {
         )}
 
         {/* Metrics grid */}
-        <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-gray-500">Open</span>
             <span className="font-mono text-gray-300">{formatCurrency(quote.open)}</span>

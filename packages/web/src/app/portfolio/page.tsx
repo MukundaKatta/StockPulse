@@ -29,12 +29,12 @@ export default function PortfolioPage() {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="space-y-6"
+      className="space-y-4 sm:space-y-6"
     >
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold text-white">Portfolio</h1>
+          <h1 className="font-display text-xl sm:text-2xl font-bold text-white">Portfolio</h1>
           <p className="mt-1 text-sm text-gray-500">Track your investments and performance</p>
         </div>
         <Button onClick={() => setShowTradeModal(true)}>
@@ -46,9 +46,9 @@ export default function PortfolioPage() {
       {/* Performance cards */}
       <PerformanceCard holdings={holdings} />
 
-      <div className="grid grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
         {/* Holdings table */}
-        <div className="col-span-8">
+        <div className="lg:col-span-8">
           <Card>
             <CardHeader>
               <CardTitle>Holdings</CardTitle>
@@ -58,7 +58,7 @@ export default function PortfolioPage() {
         </div>
 
         {/* Allocation chart */}
-        <div className="col-span-4">
+        <div className="lg:col-span-4">
           <AllocationChart holdings={holdings} />
         </div>
       </div>
