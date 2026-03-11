@@ -17,7 +17,11 @@ const createTradeSchema = z.object({
   quantity: z.number().positive(),
   price: z.number().positive(),
   fee: z.number().min(0).default(0),
-  date: z.string().transform((s) => new Date(s)),
+  date: z.string().transform((s) => {
+    const d = new Date(s);
+    if (isNaN(d.getTime())) throw new Error('Invalid date');
+    return d;
+  }),
   notes: z.string().optional(),
 });
 
@@ -59,8 +63,10 @@ router.get('/:id', async (req: Request, res: Response) => {
       h.quantity += trade.quantity;
       h.totalCost += trade.quantity * trade.price;
     } else {
+      // Subtract cost at average cost basis, not at sale price
+      const avgCost = h.quantity > 0 ? h.totalCost / h.quantity : 0;
       h.quantity -= trade.quantity;
-      h.totalCost -= trade.quantity * trade.price;
+      h.totalCost = Math.max(0, h.totalCost - trade.quantity * avgCost);
     }
     h.totalFees += trade.fee;
   }
@@ -96,6 +102,21 @@ router.post('/:id/trades', async (req: Request, res: Response) => {
   if (!portfolio) throw new AppError(404, 'Portfolio not found');
 
   const data = createTradeSchema.parse(req.body);
+
+  // Validate SELL doesn't exceed current holdings
+  if (data.type === 'SELL') {
+    const existingTrades = await prisma.trade.findMany({
+      where: { portfolioId: portfolio.id, symbol: data.symbol },
+    });
+    let currentQty = 0;
+    for (const t of existingTrades) {
+      currentQty += t.type === 'BUY' ? t.quantity : -t.quantity;
+    }
+    if (data.quantity > currentQty) {
+      throw new AppError(400, `Cannot sell ${data.quantity} shares — only ${currentQty} held`);
+    }
+  }
+
   const trade = await prisma.trade.create({
     data: { ...data, portfolioId: portfolio.id },
   });

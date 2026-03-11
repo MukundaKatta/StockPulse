@@ -16,7 +16,12 @@ interface PriceCardProps {
 export function PriceCard({ symbol, name, price, change, changePercent }: PriceCardProps) {
   const { price: livePrice, flash } = useStockPrice(symbol);
   const currentPrice = livePrice?.price ?? price ?? 0;
-  const isPositive = (change ?? 0) >= 0;
+  const previousClose = price != null && change != null ? price - change : null;
+  const currentChange = previousClose != null ? currentPrice - previousClose : change;
+  const currentChangePct = previousClose != null && previousClose > 0
+    ? ((currentPrice - previousClose) / previousClose) * 100
+    : changePercent;
+  const isPositive = (currentChange ?? 0) >= 0;
 
   return (
     <Link href={`/stock/${symbol}`}>
@@ -45,11 +50,11 @@ export function PriceCard({ symbol, name, price, change, changePercent }: PriceC
           </span>
         </div>
 
-        {change !== undefined && changePercent !== undefined && (
+        {currentChange != null && currentChangePct != null && (
           <div className={cn('mt-1 flex items-center gap-1 text-xs font-medium', isPositive ? 'text-green-400' : 'text-red-400')}>
-            <span>{isPositive ? '+' : ''}{formatCurrency(change)}</span>
+            <span>{isPositive ? '+' : ''}{formatCurrency(currentChange)}</span>
             <span className={cn('rounded px-1 py-0.5', isPositive ? 'bg-green-500/10' : 'bg-red-500/10')}>
-              {formatPercent(changePercent)}
+              {formatPercent(currentChangePct)}
             </span>
           </div>
         )}

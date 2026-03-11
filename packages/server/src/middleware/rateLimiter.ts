@@ -7,13 +7,11 @@ export function rateLimiter(maxRequests: number = 100, windowSeconds: number = 6
     const identifier = req.user?.userId || req.ip || 'anonymous';
     const key = `sp:ratelimit:${identifier}`;
 
-    // Atomic INCR + EXPIRE to prevent race condition
-    const results = await redis.multi()
-      .incr(key)
-      .expire(key, windowSeconds)
-      .exec();
-
-    const current = results?.[0]?.[1] as number ?? 0;
+    // INCR + set TTL only on first request (when key is new)
+    const current = await redis.incr(key);
+    if (current === 1) {
+      await redis.expire(key, windowSeconds);
+    }
 
     res.setHeader('X-RateLimit-Limit', maxRequests);
     res.setHeader('X-RateLimit-Remaining', Math.max(0, maxRequests - current));

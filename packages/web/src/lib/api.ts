@@ -21,8 +21,13 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       if (typeof window !== 'undefined') {
+        // Clear both localStorage and Zustand store
         localStorage.removeItem('sp-token');
         localStorage.removeItem('sp-user');
+        // Dynamically import to avoid circular dependency
+        import('@/stores/appStore').then(({ useAppStore }) => {
+          useAppStore.getState().logout();
+        });
       }
     }
     return Promise.reject(error);

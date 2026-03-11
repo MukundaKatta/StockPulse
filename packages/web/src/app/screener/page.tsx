@@ -75,45 +75,52 @@ export default function ScreenerPage() {
   const { data: results, isLoading } = useQuery({
     queryKey: ['screener', screenKey, filters],
     queryFn: async () => {
-      const overviews: ScreenResult[] = [];
-      // Fetch quotes and overviews in batches
-      const promises = SCREEN_SYMBOLS.map(async (symbol) => {
-        try {
-          const [quoteRes, overviewRes] = await Promise.allSettled([
-            api.get(`/api/stocks/${symbol}/quote`),
-            api.get(`/api/stocks/${symbol}/overview`),
-          ]);
-          const quote = quoteRes.status === 'fulfilled' ? quoteRes.value.data.quote : null;
-          const overview = overviewRes.status === 'fulfilled' ? overviewRes.value.data.overview : null;
-          if (!quote) return null;
+      // Fetch in batches of 5 to avoid rate limiting
+      const BATCH_SIZE = 5;
+      const allResults: (ScreenResult | null)[] = [];
 
-          const result: ScreenResult = {
-            symbol,
-            name: overview?.Name || symbol,
-            price: quote.price,
-            change: quote.change,
-            changePercent: quote.changePercent,
-            marketCap: overview?.MarketCapitalization || '0',
-            peRatio: overview?.PERatio || '-',
-            dividendYield: overview?.DividendYield || '0',
-            sector: overview?.Sector || '-',
-          };
+      for (let i = 0; i < SCREEN_SYMBOLS.length; i += BATCH_SIZE) {
+        const batch = SCREEN_SYMBOLS.slice(i, i + BATCH_SIZE);
+        const batchResults = await Promise.all(
+          batch.map(async (symbol) => {
+            try {
+              const [quoteRes, overviewRes] = await Promise.allSettled([
+                api.get(`/api/stocks/${symbol}/quote`),
+                api.get(`/api/stocks/${symbol}/overview`),
+              ]);
+              const quote = quoteRes.status === 'fulfilled' ? quoteRes.value.data.quote : null;
+              const overview = overviewRes.status === 'fulfilled' ? overviewRes.value.data.overview : null;
+              if (!quote) return null;
 
-          // Apply filters
-          if (filters.minMarketCap && parseFloat(result.marketCap) < parseFloat(filters.minMarketCap)) return null;
-          if (filters.maxPE && result.peRatio !== '-' && parseFloat(result.peRatio) > parseFloat(filters.maxPE)) return null;
-          if (filters.minDividend && parseFloat(result.dividendYield) < parseFloat(filters.minDividend) / 100) return null;
-          if (filters.maxPB && overview?.PriceToBookRatio && overview.PriceToBookRatio !== '-' && parseFloat(overview.PriceToBookRatio) > parseFloat(filters.maxPB)) return null;
-          if (filters.sector && result.sector !== filters.sector) return null;
+              const result: ScreenResult = {
+                symbol,
+                name: overview?.Name || symbol,
+                price: quote.price,
+                change: quote.change,
+                changePercent: quote.changePercent,
+                marketCap: overview?.MarketCapitalization || '0',
+                peRatio: overview?.PERatio || '-',
+                dividendYield: overview?.DividendYield || '0',
+                sector: overview?.Sector || '-',
+              };
 
-          return result;
-        } catch {
-          return null;
-        }
-      });
+              // Apply filters
+              if (filters.minMarketCap && parseFloat(result.marketCap) < parseFloat(filters.minMarketCap)) return null;
+              if (filters.maxPE && result.peRatio !== '-' && parseFloat(result.peRatio) > parseFloat(filters.maxPE)) return null;
+              if (filters.minDividend && parseFloat(result.dividendYield) < parseFloat(filters.minDividend) / 100) return null;
+              if (filters.maxPB && overview?.PriceToBookRatio && overview.PriceToBookRatio !== '-' && parseFloat(overview.PriceToBookRatio) > parseFloat(filters.maxPB)) return null;
+              if (filters.sector && result.sector !== filters.sector) return null;
 
-      const settled = await Promise.all(promises);
-      return settled.filter(Boolean) as ScreenResult[];
+              return result;
+            } catch {
+              return null;
+            }
+          })
+        );
+        allResults.push(...batchResults);
+      }
+
+      return allResults.filter(Boolean) as ScreenResult[];
     },
     enabled: runScreen,
     staleTime: 300000,
@@ -147,7 +154,10 @@ export default function ScreenerPage() {
   const exportScreenerCSV = () => {
     if (!sortedResults.length) return;
     const headers = ['Symbol', 'Name', 'Price', 'Change %', 'Market Cap', 'P/E', 'Dividend Yield', 'Sector'];
-    const rows = sortedResults.map((s) => [s.symbol, `"${s.name}"`, s.price.toFixed(2), s.changePercent.toFixed(2), s.marketCap, s.peRatio, (parseFloat(s.dividendYield) * 100).toFixed(2) + '%', `"${s.sector}"`].join(','));
+    const rows = sortedResults.map((s) => {
+      const div = parseFloat(s.dividendYield);
+      return [s.symbol, `"${s.name}"`, s.price.toFixed(2), s.changePercent.toFixed(2), s.marketCap, s.peRatio, isNaN(div) ? '0%' : (div * 100).toFixed(2) + '%', `"${s.sector}"`].join(',');
+    });
     const csv = [headers.join(','), ...rows].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);

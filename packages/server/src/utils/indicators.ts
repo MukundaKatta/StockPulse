@@ -55,20 +55,19 @@ export function calculateRSI(prices: number[], period: number = 14): (number | n
   let avgLoss = 0;
 
   for (let i = 0; i < changes.length; i++) {
-    if (i < period) {
+    if (i < period - 1) {
       result.push(null);
-      if (i === period - 1) {
-        let totalGain = 0;
-        let totalLoss = 0;
-        for (let j = 0; j <= i; j++) {
-          if (changes[j] > 0) totalGain += changes[j];
-          else totalLoss += Math.abs(changes[j]);
-        }
-        avgGain = totalGain / period;
-        avgLoss = totalLoss / period;
-        const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
-        result.push(100 - 100 / (1 + rs));
+    } else if (i === period - 1) {
+      let totalGain = 0;
+      let totalLoss = 0;
+      for (let j = 0; j <= i; j++) {
+        if (changes[j] > 0) totalGain += changes[j];
+        else totalLoss += Math.abs(changes[j]);
       }
+      avgGain = totalGain / period;
+      avgLoss = totalLoss / period;
+      const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+      result.push(100 - 100 / (1 + rs));
     } else {
       const change = changes[i];
       const gain = change > 0 ? change : 0;

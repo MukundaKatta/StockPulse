@@ -5,7 +5,7 @@ import api from '@/lib/api';
 import type { StockQuote, Holding } from '@/types';
 
 export function usePortfolioQuotes(holdings: Holding[]) {
-  const symbols = holdings.map((h) => h.symbol);
+  const symbols = (holdings ?? []).map((h) => h.symbol);
 
   const queries = useQueries({
     queries: symbols.map((symbol) => ({

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createChart, CandlestickSeries, HistogramSeries, LineSeries } from 'lightweight-charts';
-import type { IChartApi, Time } from 'lightweight-charts';
+import type { IChartApi, ISeriesApi, Time } from 'lightweight-charts';
 import { CHART_COLORS, TIMEFRAMES } from '@/lib/constants';
 import type { OHLCV, TechnicalIndicators } from '@/types';
 import { cn } from '@/lib/formatters';
@@ -27,6 +27,7 @@ type OverlayKey = 'sma20' | 'sma50' | 'sma200' | 'bbands';
 export function CandlestickChart({ data, onTimeframeIdxChange, currentTimeframeIdx = 4, indicators, height = 400 }: CandlestickChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
+  const overlaySeriesRef = useRef<ISeriesApi<'Line'>[]>([]);
   const [activeOverlays, setActiveOverlays] = useState<Set<OverlayKey>>(new Set());
 
   const toggleOverlay = (key: OverlayKey) => {
@@ -116,41 +117,6 @@ export function CandlestickChart({ data, onTimeframeIdxChange, currentTimeframeI
 
       candleSeries.setData(candleData);
       volumeSeries.setData(volumeData);
-
-      // Add indicator overlays
-      if (indicators?.timestamps && indicators.timestamps.length > 0) {
-        const indTimes = indicators.timestamps.map((t) => t.split(' ')[0] as Time);
-
-        const addLineSeries = (values: (number | null)[], color: string, lineStyle?: number) => {
-          const series = chart.addSeries(LineSeries, {
-            color,
-            lineWidth: 1,
-            lineStyle: lineStyle ?? 0,
-            priceLineVisible: false,
-            lastValueVisible: false,
-          });
-          const lineData = values
-            .map((v, i) => v !== null ? { time: indTimes[i], value: v } : null)
-            .filter(Boolean) as { time: Time; value: number }[];
-          if (lineData.length > 0) series.setData(lineData);
-        };
-
-        if (activeOverlays.has('sma20') && indicators.sma?.sma20) {
-          addLineSeries(indicators.sma.sma20, '#f59e0b');
-        }
-        if (activeOverlays.has('sma50') && indicators.sma?.sma50) {
-          addLineSeries(indicators.sma.sma50, '#6366f1');
-        }
-        if (activeOverlays.has('sma200') && indicators.sma?.sma200) {
-          addLineSeries(indicators.sma.sma200, '#ec4899');
-        }
-        if (activeOverlays.has('bbands') && indicators.bollingerBands) {
-          addLineSeries(indicators.bollingerBands.upper, 'rgba(139, 92, 246, 0.5)', 2);
-          addLineSeries(indicators.bollingerBands.middle, 'rgba(139, 92, 246, 0.3)');
-          addLineSeries(indicators.bollingerBands.lower, 'rgba(139, 92, 246, 0.5)', 2);
-        }
-      }
-
       chart.timeScale().fitContent();
     }
 
@@ -166,8 +132,53 @@ export function CandlestickChart({ data, onTimeframeIdxChange, currentTimeframeI
     return () => {
       window.removeEventListener('resize', handleResize);
       chart.remove();
+      chartRef.current = null;
     };
-  }, [height, data, indicators, activeOverlays]);
+  }, [height, data]);
+
+  // Separate effect for overlay toggling — avoids recreating the chart
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart || !indicators?.timestamps?.length) return;
+
+    // Remove old overlay series
+    for (const s of overlaySeriesRef.current) {
+      try { chart.removeSeries(s); } catch { /* already removed */ }
+    }
+    overlaySeriesRef.current = [];
+
+    const indTimes = indicators.timestamps.map((t) => t.split(' ')[0] as Time);
+
+    const addLineSeries = (values: (number | null)[], color: string, lineStyle?: number) => {
+      const series = chart.addSeries(LineSeries, {
+        color,
+        lineWidth: 1,
+        lineStyle: lineStyle ?? 0,
+        priceLineVisible: false,
+        lastValueVisible: false,
+      });
+      const lineData = values
+        .map((v, i) => v !== null ? { time: indTimes[i], value: v } : null)
+        .filter(Boolean) as { time: Time; value: number }[];
+      if (lineData.length > 0) series.setData(lineData);
+      overlaySeriesRef.current.push(series);
+    };
+
+    if (activeOverlays.has('sma20') && indicators.sma?.sma20) {
+      addLineSeries(indicators.sma.sma20, '#f59e0b');
+    }
+    if (activeOverlays.has('sma50') && indicators.sma?.sma50) {
+      addLineSeries(indicators.sma.sma50, '#6366f1');
+    }
+    if (activeOverlays.has('sma200') && indicators.sma?.sma200) {
+      addLineSeries(indicators.sma.sma200, '#ec4899');
+    }
+    if (activeOverlays.has('bbands') && indicators.bollingerBands) {
+      addLineSeries(indicators.bollingerBands.upper, 'rgba(139, 92, 246, 0.5)', 2);
+      addLineSeries(indicators.bollingerBands.middle, 'rgba(139, 92, 246, 0.3)');
+      addLineSeries(indicators.bollingerBands.lower, 'rgba(139, 92, 246, 0.5)', 2);
+    }
+  }, [activeOverlays, indicators]);
 
   return (
     <div className="space-y-2">

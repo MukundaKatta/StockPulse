@@ -10,6 +10,7 @@ const envSchema = z.object({
   JWT_EXPIRY: z.string().default('7d'),
   PORT: z.coerce.number().default(4000),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  FRONTEND_URL: z.string().default('http://localhost:5173'),
 });
 
 export type Env = z.infer<typeof envSchema>;

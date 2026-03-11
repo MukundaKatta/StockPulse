@@ -4,13 +4,12 @@ import Redis from 'ioredis';
 import { env } from '../config/env';
 
 let io: Server;
+let redisSub: Redis | null = null;
 
-export function initSocketIO(httpServer: HttpServer): Server {
+export function initSocketIO(httpServer: HttpServer, corsOrigin: string | string[]): Server {
   io = new Server(httpServer, {
     cors: {
-      origin: env.NODE_ENV === 'production'
-        ? (process.env.FRONTEND_URL || 'https://stockpulse.app')
-        : ['http://localhost:3000'],
+      origin: corsOrigin,
       methods: ['GET', 'POST'],
       credentials: true,
     },
@@ -18,13 +17,13 @@ export function initSocketIO(httpServer: HttpServer): Server {
   });
 
   // Subscribe to Redis pub/sub for price updates
-  const sub = new Redis(env.REDIS_URL);
-  sub.subscribe('sp:prices', (err) => {
+  redisSub = new Redis(env.REDIS_URL);
+  redisSub.subscribe('sp:prices', (err) => {
     if (err) console.error('Redis subscribe error:', err);
     else console.log('Subscribed to sp:prices channel');
   });
 
-  sub.on('message', (_channel, message) => {
+  redisSub.on('message', (_channel, message) => {
     try {
       const data = JSON.parse(message);
       io.to(`stock:${data.symbol}`).emit('price-update', data);
@@ -63,5 +62,15 @@ export function initSocketIO(httpServer: HttpServer): Server {
 }
 
 export function getIO(): Server {
+  if (!io) {
+    throw new Error('Socket.IO not initialized — call initSocketIO first');
+  }
   return io;
+}
+
+export function closeSocketIO(): void {
+  if (redisSub) {
+    redisSub.disconnect();
+    redisSub = null;
+  }
 }

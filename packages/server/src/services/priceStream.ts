@@ -7,10 +7,14 @@ type PriceCallback = (data: { symbol: string; price: number; volume: number; tim
 let ws: WebSocket | null = null;
 let reconnectTimer: NodeJS.Timeout | null = null;
 const subscribers = new Set<string>();
-const callbacks: PriceCallback[] = [];
+const callbacks = new Set<PriceCallback>();
 
 export function onPriceUpdate(callback: PriceCallback): void {
-  callbacks.push(callback);
+  callbacks.add(callback);
+}
+
+export function offPriceUpdate(callback: PriceCallback): void {
+  callbacks.delete(callback);
 }
 
 export function subscribeSymbol(symbol: string): void {
@@ -31,6 +35,15 @@ export function connectFinnhubWS(): void {
   if (!env.FINNHUB_KEY) {
     console.warn('Finnhub API key not set — WebSocket price stream disabled');
     return;
+  }
+
+  // Close old connection if any to prevent duplicate listeners
+  if (ws) {
+    ws.removeAllListeners();
+    if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+      ws.close();
+    }
+    ws = null;
   }
 
   ws = new WebSocket(`wss://ws.finnhub.io?token=${env.FINNHUB_KEY}`);
