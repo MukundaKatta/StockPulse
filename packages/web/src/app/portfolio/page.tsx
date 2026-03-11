@@ -12,12 +12,33 @@ import { AddTradeModal } from '@/components/portfolio/AddTradeModal';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus } from 'lucide-react';
+import { Plus, Download } from 'lucide-react';
 
 export default function PortfolioPage() {
   const { portfolios, activePortfolioId, holdings, trades, fetchPortfolios, fetchHoldings } = usePortfolioStore();
   const { quotes } = usePortfolioQuotes(holdings);
   const [showTradeModal, setShowTradeModal] = useState(false);
+
+  const exportCSV = () => {
+    if (holdings.length === 0) return;
+    const headers = ['Symbol', 'Shares', 'Avg Cost', 'Cost Basis', 'Market Price', 'Market Value', 'P&L', 'P&L %'];
+    const rows = holdings.map((h) => {
+      const quote = quotes[h.symbol];
+      const price = quote?.price ?? h.avgCost;
+      const marketValue = price * h.quantity;
+      const pl = marketValue - h.totalCost;
+      const plPct = h.totalCost > 0 ? ((pl / h.totalCost) * 100).toFixed(2) : '0';
+      return [h.symbol, h.quantity.toFixed(2), h.avgCost.toFixed(2), h.totalCost.toFixed(2), price.toFixed(2), marketValue.toFixed(2), pl.toFixed(2), plPct].join(',');
+    });
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `portfolio-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   useEffect(() => {
     fetchPortfolios();
@@ -41,10 +62,16 @@ export default function PortfolioPage() {
           <h1 className="font-display text-xl sm:text-2xl font-bold text-white">Portfolio</h1>
           <p className="mt-1 text-sm text-gray-500">Track your investments and performance</p>
         </div>
-        <Button onClick={() => setShowTradeModal(true)}>
-          <Plus className="h-4 w-4" />
-          Add Trade
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={exportCSV} disabled={holdings.length === 0}>
+            <Download className="h-4 w-4" />
+            <span className="hidden sm:inline">Export</span>
+          </Button>
+          <Button onClick={() => setShowTradeModal(true)}>
+            <Plus className="h-4 w-4" />
+            Add Trade
+          </Button>
+        </div>
       </div>
 
       {/* Performance cards */}

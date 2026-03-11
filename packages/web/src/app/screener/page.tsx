@@ -8,7 +8,7 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Filter, Search, TrendingUp, TrendingDown, Loader2 } from 'lucide-react';
+import { Filter, Search, TrendingUp, TrendingDown, Loader2, ArrowUpDown, Download } from 'lucide-react';
 import Link from 'next/link';
 import api from '@/lib/api';
 import { formatCurrency, formatLargeNumber, cn } from '@/lib/formatters';
@@ -18,6 +18,7 @@ interface ScreenerFilter {
   maxPE: string;
   minDividend: string;
   sector: string;
+  maxPB: string;
 }
 
 interface ScreenResult {
@@ -33,15 +34,30 @@ interface ScreenResult {
 }
 
 const POPULAR_SCREENS = [
-  { label: 'Large Cap Value', filters: { minMarketCap: '10000000000', maxPE: '20', minDividend: '2', sector: '' } },
-  { label: 'Growth Stocks', filters: { minMarketCap: '1000000000', maxPE: '', minDividend: '', sector: 'Technology' } },
-  { label: 'High Dividend', filters: { minMarketCap: '', maxPE: '', minDividend: '4', sector: '' } },
+  { label: 'Large Cap Value', filters: { minMarketCap: '10000000000', maxPE: '20', minDividend: '2', sector: '', maxPB: '' } },
+  { label: 'Growth Stocks', filters: { minMarketCap: '1000000000', maxPE: '', minDividend: '', sector: 'Technology', maxPB: '' } },
+  { label: 'High Dividend', filters: { minMarketCap: '', maxPE: '', minDividend: '4', sector: '', maxPB: '' } },
+  { label: 'Mega Cap', filters: { minMarketCap: '200000000000', maxPE: '', minDividend: '', sector: '', maxPB: '' } },
+  { label: 'Value + Income', filters: { minMarketCap: '5000000000', maxPE: '15', minDividend: '3', sector: '', maxPB: '3' } },
 ];
 
 const SECTORS = ['', 'Technology', 'Healthcare', 'Financial Services', 'Consumer Cyclical', 'Industrial', 'Energy', 'Utilities', 'Real Estate', 'Communication Services'];
 
-// Curated stock lists for screening (since we don't have a full market database)
-const SCREEN_SYMBOLS = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META', 'BRK-B', 'JPM', 'JNJ', 'V', 'UNH', 'PG', 'HD', 'MA', 'XOM', 'CVX', 'PFE', 'KO', 'PEP', 'ABBV', 'MRK', 'WMT', 'COST', 'DIS'];
+// Expanded curated stock list covering major sectors
+const SCREEN_SYMBOLS = [
+  // Tech
+  'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META', 'AVGO', 'CRM', 'ADBE', 'AMD', 'INTC', 'ORCL', 'CSCO', 'QCOM',
+  // Finance
+  'JPM', 'V', 'MA', 'BAC', 'GS', 'WFC', 'BLK', 'AXP',
+  // Healthcare
+  'JNJ', 'UNH', 'PFE', 'ABBV', 'MRK', 'LLY', 'TMO', 'ABT',
+  // Consumer
+  'PG', 'KO', 'PEP', 'WMT', 'COST', 'HD', 'MCD', 'NKE', 'SBUX',
+  // Energy & Industrials
+  'XOM', 'CVX', 'CAT', 'BA', 'GE', 'UPS', 'HON',
+  // Other
+  'DIS', 'NFLX', 'T', 'VZ', 'NEE', 'BRK-B',
+];
 
 export default function ScreenerPage() {
   const [filters, setFilters] = useState<ScreenerFilter>({
@@ -49,17 +65,19 @@ export default function ScreenerPage() {
     maxPE: '',
     minDividend: '',
     sector: '',
+    maxPB: '',
   });
   const [runScreen, setRunScreen] = useState(false);
   const [screenKey, setScreenKey] = useState(0);
+  const [sortCol, setSortCol] = useState<string>('marketCap');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
   const { data: results, isLoading } = useQuery({
     queryKey: ['screener', screenKey, filters],
     queryFn: async () => {
       const overviews: ScreenResult[] = [];
-      // Fetch quotes and overviews for curated symbols
-      const symbolBatch = SCREEN_SYMBOLS.slice(0, 12);
-      const promises = symbolBatch.map(async (symbol) => {
+      // Fetch quotes and overviews in batches
+      const promises = SCREEN_SYMBOLS.map(async (symbol) => {
         try {
           const [quoteRes, overviewRes] = await Promise.allSettled([
             api.get(`/api/stocks/${symbol}/quote`),
@@ -85,6 +103,7 @@ export default function ScreenerPage() {
           if (filters.minMarketCap && parseFloat(result.marketCap) < parseFloat(filters.minMarketCap)) return null;
           if (filters.maxPE && result.peRatio !== '-' && parseFloat(result.peRatio) > parseFloat(filters.maxPE)) return null;
           if (filters.minDividend && parseFloat(result.dividendYield) < parseFloat(filters.minDividend) / 100) return null;
+          if (filters.maxPB && overview?.PriceToBookRatio && overview.PriceToBookRatio !== '-' && parseFloat(overview.PriceToBookRatio) > parseFloat(filters.maxPB)) return null;
           if (filters.sector && result.sector !== filters.sector) return null;
 
           return result;
@@ -108,6 +127,35 @@ export default function ScreenerPage() {
   const applyPreset = (preset: typeof POPULAR_SCREENS[0]) => {
     setFilters(preset.filters);
     toast.info(`Applied "${preset.label}" screen`);
+  };
+
+  const toggleSort = (col: string) => {
+    if (sortCol === col) setSortDir((d) => d === 'asc' ? 'desc' : 'asc');
+    else { setSortCol(col); setSortDir('desc'); }
+  };
+
+  const sortedResults = results ? [...results].sort((a, b) => {
+    const mul = sortDir === 'asc' ? 1 : -1;
+    if (sortCol === 'symbol') return a.symbol.localeCompare(b.symbol) * mul;
+    if (sortCol === 'price') return (a.price - b.price) * mul;
+    if (sortCol === 'changePercent') return (a.changePercent - b.changePercent) * mul;
+    if (sortCol === 'marketCap') return (parseFloat(a.marketCap || '0') - parseFloat(b.marketCap || '0')) * mul;
+    if (sortCol === 'peRatio') return ((parseFloat(a.peRatio) || 999) - (parseFloat(b.peRatio) || 999)) * mul;
+    return 0;
+  }) : [];
+
+  const exportScreenerCSV = () => {
+    if (!sortedResults.length) return;
+    const headers = ['Symbol', 'Name', 'Price', 'Change %', 'Market Cap', 'P/E', 'Dividend Yield', 'Sector'];
+    const rows = sortedResults.map((s) => [s.symbol, `"${s.name}"`, s.price.toFixed(2), s.changePercent.toFixed(2), s.marketCap, s.peRatio, (parseFloat(s.dividendYield) * 100).toFixed(2) + '%', `"${s.sector}"`].join(','));
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `screener-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -142,7 +190,7 @@ export default function ScreenerPage() {
             Filters
           </CardTitle>
         </CardHeader>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <Input
             label="Min Market Cap"
             placeholder="e.g. 1000000000"
@@ -160,6 +208,12 @@ export default function ScreenerPage() {
             placeholder="e.g. 2"
             value={filters.minDividend}
             onChange={(e) => setFilters((f) => ({ ...f, minDividend: e.target.value }))}
+          />
+          <Input
+            label="Max P/B Ratio"
+            placeholder="e.g. 5"
+            value={filters.maxPB}
+            onChange={(e) => setFilters((f) => ({ ...f, maxPB: e.target.value }))}
           />
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-gray-400">Sector</label>
@@ -186,7 +240,15 @@ export default function ScreenerPage() {
       {/* Results */}
       <Card>
         <CardHeader>
-          <CardTitle>Results{results ? ` (${results.length})` : ''}</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Results{results ? ` (${results.length})` : ''}</CardTitle>
+            {sortedResults.length > 0 && (
+              <button onClick={exportScreenerCSV} className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-300 transition-colors">
+                <Download className="h-3.5 w-3.5" />
+                Export CSV
+              </button>
+            )}
+          </div>
         </CardHeader>
         {!runScreen ? (
           <div className="py-12 text-center text-gray-500">
@@ -204,17 +266,29 @@ export default function ScreenerPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-white/[0.06]">
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Symbol</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 hidden sm:table-cell">Name</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Price</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Change</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 hidden md:table-cell">Market Cap</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 hidden md:table-cell">P/E</th>
+                  {[
+                    { key: 'symbol', label: 'Symbol', align: 'left', hide: '' },
+                    { key: 'price', label: 'Price', align: 'right', hide: '' },
+                    { key: 'changePercent', label: 'Change', align: 'right', hide: '' },
+                    { key: 'marketCap', label: 'Market Cap', align: 'right', hide: 'hidden md:table-cell' },
+                    { key: 'peRatio', label: 'P/E', align: 'right', hide: 'hidden md:table-cell' },
+                  ].map((col) => (
+                    <th
+                      key={col.key}
+                      onClick={() => toggleSort(col.key)}
+                      className={cn('cursor-pointer px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-500 hover:text-gray-400', col.align === 'right' ? 'text-right' : 'text-left', col.hide)}
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        {col.label}
+                        <ArrowUpDown className="h-3 w-3" />
+                      </span>
+                    </th>
+                  ))}
                   <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 hidden lg:table-cell">Sector</th>
                 </tr>
               </thead>
               <tbody>
-                {results.map((stock) => {
+                {sortedResults.map((stock) => {
                   const isPositive = stock.change >= 0;
                   return (
                     <tr key={stock.symbol} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
@@ -222,8 +296,8 @@ export default function ScreenerPage() {
                         <Link href={`/stock/${stock.symbol}`} className="font-mono font-medium text-indigo-400 hover:text-indigo-300">
                           {stock.symbol}
                         </Link>
+                        <div className="text-xs text-gray-600 truncate max-w-[120px]">{stock.name}</div>
                       </td>
-                      <td className="px-4 py-3 text-gray-400 hidden sm:table-cell">{stock.name}</td>
                       <td className="px-4 py-3 text-right font-mono font-medium text-white">{formatCurrency(stock.price)}</td>
                       <td className="px-4 py-3 text-right">
                         <span className={cn('inline-flex items-center gap-1 font-mono text-xs', isPositive ? 'text-green-400' : 'text-red-400')}>

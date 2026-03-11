@@ -8,7 +8,7 @@ import { MarketOverview } from '@/components/dashboard/MarketOverview';
 import { TopMovers } from '@/components/dashboard/TopMovers';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useAppStore } from '@/stores/appStore';
-import { LineChart, TrendingUp, Briefcase, ArrowRight, Bell } from 'lucide-react';
+import { LineChart, TrendingUp, Briefcase, ArrowRight, Bell, BarChart3 } from 'lucide-react';
 import Link from 'next/link';
 
 const FEATURED_STOCKS = [
@@ -82,7 +82,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Quick links */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Link href="/portfolio">
               <Card hover className="cursor-pointer">
                 <div className="flex items-center gap-3">
@@ -93,7 +93,7 @@ export default function DashboardPage() {
                     <h3 className="text-sm font-medium text-white">Portfolio</h3>
                     <p className="text-xs text-gray-500">Track investments</p>
                   </div>
-                  <ArrowRight className="h-4 w-4 text-gray-600 shrink-0" />
+                  <ArrowRight className="h-4 w-4 text-gray-600 shrink-0 hidden sm:block" />
                 </div>
               </Card>
             </Link>
@@ -107,7 +107,21 @@ export default function DashboardPage() {
                     <h3 className="text-sm font-medium text-white">Screener</h3>
                     <p className="text-xs text-gray-500">Find stocks</p>
                   </div>
-                  <ArrowRight className="h-4 w-4 text-gray-600 shrink-0" />
+                  <ArrowRight className="h-4 w-4 text-gray-600 shrink-0 hidden sm:block" />
+                </div>
+              </Card>
+            </Link>
+            <Link href="/compare">
+              <Card hover className="cursor-pointer">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/10">
+                    <BarChart3 className="h-5 w-5 text-green-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-medium text-white">Compare</h3>
+                    <p className="text-xs text-gray-500">Side by side</p>
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-gray-600 shrink-0 hidden sm:block" />
                 </div>
               </Card>
             </Link>
@@ -119,9 +133,9 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-medium text-white">Alerts</h3>
-                    <p className="text-xs text-gray-500">Price notifications</p>
+                    <p className="text-xs text-gray-500">Price alerts</p>
                   </div>
-                  <ArrowRight className="h-4 w-4 text-gray-600 shrink-0" />
+                  <ArrowRight className="h-4 w-4 text-gray-600 shrink-0 hidden sm:block" />
                 </div>
               </Card>
             </Link>

@@ -17,6 +17,7 @@ import { useTechnicalIndicators } from '@/hooks/useTechnicals';
 import { useWatchlistStore } from '@/stores/watchlistStore';
 import { ChartSkeleton, CardSkeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/formatters';
+import { TIMEFRAMES } from '@/lib/constants';
 import { Star, StarOff, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
@@ -27,12 +28,13 @@ export default function StockPage() {
   const params = useParams();
   const symbol = (params.symbol as string)?.toUpperCase() || null;
   const [activeTab, setActiveTab] = useState<Tab>('Technical');
-  const [timeframe, setTimeframe] = useState('daily');
+  const [timeframeIdx, setTimeframeIdx] = useState(4); // Default to '1Y'
+  const tf = TIMEFRAMES[timeframeIdx];
 
   const { data: quote, isLoading: quoteLoading } = useStockQuote(symbol);
-  const { data: history, isLoading: historyLoading } = useStockHistory(symbol, timeframe);
+  const { data: history, isLoading: historyLoading } = useStockHistory(symbol, tf.value, tf.outputSize, tf.days);
   const { data: overview } = useCompanyOverview(symbol);
-  const { data: indicators } = useTechnicalIndicators(symbol, timeframe);
+  const { data: indicators } = useTechnicalIndicators(symbol, tf.value);
   const { data: news } = useStockNews(symbol);
 
   const { watchlists, activeWatchlistId, addSymbol, removeItem } = useWatchlistStore();
@@ -102,8 +104,9 @@ export default function StockPage() {
           ) : history ? (
             <CandlestickChart
               data={history}
-              currentTimeframe={timeframe}
-              onTimeframeChange={setTimeframe}
+              currentTimeframeIdx={timeframeIdx}
+              onTimeframeIdxChange={setTimeframeIdx}
+              indicators={indicators}
             />
           ) : null}
         </div>

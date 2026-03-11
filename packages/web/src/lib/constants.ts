@@ -2,13 +2,13 @@ export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000
 export const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:4000';
 
 export const TIMEFRAMES = [
-  { label: '1D', value: '5min' },
-  { label: '1W', value: '15min' },
-  { label: '1M', value: '30min' },
-  { label: '3M', value: '60min' },
-  { label: '1Y', value: 'daily' },
-  { label: '5Y', value: 'daily' },
-  { label: 'MAX', value: 'daily' },
+  { label: '1D', value: '5min', outputSize: 'compact' as const, days: 1 },
+  { label: '1W', value: '15min', outputSize: 'compact' as const, days: 7 },
+  { label: '1M', value: '30min', outputSize: 'compact' as const, days: 30 },
+  { label: '3M', value: 'daily', outputSize: 'compact' as const, days: 90 },
+  { label: '1Y', value: 'daily', outputSize: 'full' as const, days: 365 },
+  { label: '5Y', value: 'daily', outputSize: 'full' as const, days: 1825 },
+  { label: 'MAX', value: 'daily', outputSize: 'full' as const, days: Infinity },
 ] as const;
 
 export const CHART_COLORS = {

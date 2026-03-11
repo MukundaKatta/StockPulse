@@ -18,6 +18,7 @@ import {
   X,
   Menu,
   Bell,
+  BarChart3,
 } from 'lucide-react';
 import { useEffect } from 'react';
 
@@ -25,6 +26,7 @@ const navItems = [
   { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/portfolio', icon: Briefcase, label: 'Portfolio' },
   { href: '/screener', icon: Filter, label: 'Screener' },
+  { href: '/compare', icon: BarChart3, label: 'Compare' },
   { href: '/alerts', icon: Bell, label: 'Alerts' },
   { href: '/settings', icon: Settings, label: 'Settings' },
 ];
