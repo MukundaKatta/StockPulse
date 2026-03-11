@@ -18,18 +18,18 @@ export function useStockQuote(symbol: string | null) {
 }
 
 export function useStockHistory(symbol: string | null, interval: string = 'daily', outputSize: string = 'compact', days: number = Infinity) {
+  const daysKey = isFinite(days) ? days : 'all';
   return useQuery({
-    queryKey: ['history', symbol, interval, outputSize, days],
+    queryKey: ['history', symbol, interval, outputSize, daysKey],
     queryFn: async () => {
       const { data } = await api.get(`/api/stocks/${symbol}/history`, {
         params: { interval, outputSize },
       });
       let prices = data.data as OHLCV[];
-      if (days < Infinity && prices.length > 0) {
+      if (isFinite(days) && prices.length > 0) {
         const cutoff = new Date();
         cutoff.setDate(cutoff.getDate() - days);
-        const cutoffStr = cutoff.toISOString().split('T')[0];
-        prices = prices.filter((p) => p.timestamp >= cutoffStr);
+        prices = prices.filter((p) => new Date(p.timestamp) >= cutoff);
       }
       return prices;
     },
@@ -45,7 +45,7 @@ export function useStockSearch(query: string) {
       const { data } = await api.get('/api/stocks/search', { params: { q: query } });
       return data.results as SearchResult[];
     },
-    enabled: query.length >= 1,
+    enabled: query.trim().length >= 2,
     staleTime: 30000,
   });
 }

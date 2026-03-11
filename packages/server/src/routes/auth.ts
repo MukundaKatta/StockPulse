@@ -21,20 +21,26 @@ const loginSchema = z.object({
 router.post('/register', async (req: Request, res: Response) => {
   const { email, password, name } = registerSchema.parse(req.body);
 
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
-    throw new AppError(409, 'Email already registered');
-  }
-
   const passwordHash = await bcrypt.hash(password, 12);
-  const user = await prisma.user.create({
-    data: { email, passwordHash, name },
-  });
 
-  // Create default portfolio and watchlist
-  await prisma.portfolio.create({ data: { userId: user.id, name: 'My Portfolio' } });
-  await prisma.watchlist.create({ data: { userId: user.id, name: 'My Watchlist' } });
-  await prisma.userSettings.create({ data: { userId: user.id } });
+  // Use transaction to prevent race condition and ensure atomicity
+  const user = await prisma.$transaction(async (tx) => {
+    const existing = await tx.user.findUnique({ where: { email } });
+    if (existing) {
+      throw new AppError(409, 'Email already registered');
+    }
+
+    const newUser = await tx.user.create({
+      data: { email, passwordHash, name },
+    });
+
+    // Create default portfolio, watchlist, and settings atomically
+    await tx.portfolio.create({ data: { userId: newUser.id, name: 'My Portfolio' } });
+    await tx.watchlist.create({ data: { userId: newUser.id, name: 'My Watchlist' } });
+    await tx.userSettings.create({ data: { userId: newUser.id } });
+
+    return newUser;
+  });
 
   const token = generateToken({ userId: user.id, email: user.email });
   res.status(201).json({

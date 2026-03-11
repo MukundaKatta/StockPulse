@@ -36,7 +36,7 @@ export interface FinnhubQuote {
 
 export async function getQuote(symbol: string): Promise<FinnhubQuote> {
   const data = await fetchFinnhub('/quote', { symbol }) as FinnhubQuote;
-  if (!data.c) {
+  if (data.c === undefined || data.c === null) {
     throw new AppError(404, `No quote data for ${symbol}`);
   }
   return data;

@@ -14,7 +14,10 @@ interface KeyMetricsProps {
 export function KeyMetrics({ quote, overview }: KeyMetricsProps) {
   const weekHigh = overview ? parseFloat(overview['52WeekHigh']) : null;
   const weekLow = overview ? parseFloat(overview['52WeekLow']) : null;
-  const positionPct = weekHigh && weekLow ? ((quote.price - weekLow) / (weekHigh - weekLow)) * 100 : 50;
+  const range = (weekHigh ?? 0) - (weekLow ?? 0);
+  const positionPct = weekHigh != null && weekLow != null && range > 0
+    ? ((quote.price - weekLow) / range) * 100
+    : 50;
 
   return (
     <Card hover>
@@ -24,7 +27,7 @@ export function KeyMetrics({ quote, overview }: KeyMetricsProps) {
 
       <div className="space-y-3">
         {/* 52 Week Range */}
-        {weekHigh && weekLow && (
+        {weekHigh != null && weekLow != null && range > 0 && (
           <div>
             <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
               <span>52W Low: <span className="font-mono text-gray-400">{formatCurrency(weekLow)}</span></span>

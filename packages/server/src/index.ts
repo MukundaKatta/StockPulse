@@ -10,8 +10,8 @@ import { prisma } from './config/database';
 import { redis } from './config/redis';
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter } from './middleware/rateLimiter';
-import { initSocketIO } from './websocket/priceSocket';
-import { connectFinnhubWS } from './services/priceStream';
+import { initSocketIO, closeSocketIO } from './websocket/priceSocket';
+import { connectFinnhubWS, disconnectFinnhubWS } from './services/priceStream';
 import { startPricePoller } from './jobs/pricePoller';
 import { startFundamentalSync } from './jobs/fundamentalSync';
 import { startNewsPoller } from './jobs/newsPoller';
@@ -27,12 +27,15 @@ import newsRoutes from './routes/news';
 const app = express();
 const server = createServer(app);
 
+// CORS origins
+const corsOrigin = env.NODE_ENV === 'production'
+  ? env.FRONTEND_URL
+  : ['http://localhost:3000', 'http://localhost:5173'];
+
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: env.NODE_ENV === 'production'
-    ? (process.env.FRONTEND_URL || 'https://stockpulse.app')
-    : ['http://localhost:3000'],
+  origin: corsOrigin,
   credentials: true,
 }));
 app.use(compression());
@@ -62,8 +65,8 @@ app.use('/api/watchlist', watchlistRoutes);
 // Error handler (must be last)
 app.use(errorHandler);
 
-// Initialize Socket.IO
-initSocketIO(server);
+// Initialize Socket.IO (reuse corsOrigin)
+const io = initSocketIO(server, corsOrigin);
 
 // Start server
 server.listen(env.PORT, () => {
@@ -77,11 +80,20 @@ server.listen(env.PORT, () => {
   startNewsPoller();
 });
 
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  console.log('SIGTERM received. Shutting down...');
-  server.close();
-  await prisma.$disconnect();
-  redis.disconnect();
-  process.exit(0);
-});
+// Graceful shutdown handler
+async function shutdown(signal: string) {
+  console.log(`${signal} received. Shutting down...`);
+  disconnectFinnhubWS();
+  closeSocketIO();
+  io.close();
+  server.close(async () => {
+    await prisma.$disconnect();
+    redis.disconnect();
+    process.exit(0);
+  });
+  // Force exit after 10s if graceful shutdown fails
+  setTimeout(() => process.exit(1), 10000);
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

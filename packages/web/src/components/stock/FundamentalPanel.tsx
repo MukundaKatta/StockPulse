@@ -31,9 +31,10 @@ const METRIC_TOOLTIPS: Record<string, string> = {
   '50D SMA': '50-day Simple Moving Average. Price above SMA suggests short-term uptrend.',
 };
 
-function MetricCard({ label, value, suffix }: { label: string; value: string; suffix?: string }) {
+function MetricCard({ label, value, suffix, isRatio }: { label: string; value: string; suffix?: string; isRatio?: boolean }) {
   const numVal = parseFloat(value);
-  const display = isNaN(numVal) ? value || '-' : `${numVal.toFixed(2)}${suffix || ''}`;
+  const displayVal = isRatio && !isNaN(numVal) ? numVal * 100 : numVal;
+  const display = isNaN(numVal) ? value || '-' : `${displayVal.toFixed(2)}${suffix || ''}`;
   const tooltip = METRIC_TOOLTIPS[label];
 
   return (
@@ -75,10 +76,10 @@ export function FundamentalPanel({ overview }: FundamentalPanelProps) {
           <CardTitle>Profitability</CardTitle>
         </CardHeader>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          <MetricCard label="Profit Margin" value={overview.ProfitMargin} suffix="%" />
-          <MetricCard label="Operating Margin" value={overview.OperatingMarginTTM} suffix="%" />
-          <MetricCard label="ROE" value={overview.ReturnOnEquityTTM} suffix="%" />
-          <MetricCard label="ROA" value={overview.ReturnOnAssetsTTM} suffix="%" />
+          <MetricCard label="Profit Margin" value={overview.ProfitMargin} suffix="%" isRatio />
+          <MetricCard label="Operating Margin" value={overview.OperatingMarginTTM} suffix="%" isRatio />
+          <MetricCard label="ROE" value={overview.ReturnOnEquityTTM} suffix="%" isRatio />
+          <MetricCard label="ROA" value={overview.ReturnOnAssetsTTM} suffix="%" isRatio />
           <MetricCard label="EPS (TTM)" value={overview.EPS} />
           <MetricCard label="Book Value" value={overview.BookValue} />
         </div>
@@ -93,7 +94,7 @@ export function FundamentalPanel({ overview }: FundamentalPanelProps) {
           <MetricCard label="Market Cap" value={formatLargeNumber(parseFloat(overview.MarketCapitalization || '0'))} />
           <MetricCard label="52W High" value={overview['52WeekHigh']} />
           <MetricCard label="52W Low" value={overview['52WeekLow']} />
-          <MetricCard label="Div Yield" value={overview.DividendYield} suffix="%" />
+          <MetricCard label="Div Yield" value={overview.DividendYield} suffix="%" isRatio />
           <MetricCard label="Beta" value={overview.Beta} />
           <MetricCard label="50D SMA" value={overview['50DayMovingAverage']} />
         </div>

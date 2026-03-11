@@ -36,13 +36,24 @@ function handleRawPrice(data: PriceData) {
   }
 }
 
-let globalListenerAttached = false;
-
 function ensureGlobalListener() {
-  if (globalListenerAttached) return;
-  globalListenerAttached = true;
   const socket = getSocket();
+  // Use off+on to ensure exactly one listener, even after reconnect
+  socket.off('price-update', handleRawPrice);
   socket.on('price-update', handleRawPrice);
+  // Re-attach on reconnect so we don't lose the listener
+  socket.off('connect', reattachOnConnect);
+  socket.on('connect', reattachOnConnect);
+}
+
+function reattachOnConnect() {
+  const socket = getSocket();
+  socket.off('price-update', handleRawPrice);
+  socket.on('price-update', handleRawPrice);
+  // Re-subscribe all active symbols
+  for (const symbol of listeners.keys()) {
+    socket.emit('subscribe', [symbol]);
+  }
 }
 
 export function useStockPrice(symbol: string | null) {

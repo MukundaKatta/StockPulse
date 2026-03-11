@@ -29,7 +29,7 @@ function RSIGauge({ value }: { value: number }) {
             x1="100"
             y1="100"
             x2={100 + 70 * Math.cos((angle * Math.PI) / 180)}
-            y2={100 - 70 * Math.sin(((-angle) * Math.PI) / 180)}
+            y2={100 - 70 * Math.sin((angle * Math.PI) / 180)}
             stroke={isOverbought ? '#ef4444' : isOversold ? '#22c55e' : '#6366f1'}
             strokeWidth="2"
             strokeLinecap="round"
@@ -63,7 +63,7 @@ function MACDDisplay({ macd, signal, histogram }: { macd: number | null; signal:
           <div className="text-[10px] uppercase text-gray-500">Histogram</div>
           <div className={cn(
             'font-mono text-sm font-medium',
-            histogram && histogram > 0 ? 'text-green-400' : 'text-red-400'
+            histogram === null ? 'text-gray-400' : histogram > 0 ? 'text-green-400' : histogram < 0 ? 'text-red-400' : 'text-gray-400'
           )}>
             {histogram?.toFixed(2) ?? '-'}
           </div>

@@ -1,4 +1,5 @@
 export function formatCurrency(value: number): string {
+  if (!isFinite(value)) return '—';
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
@@ -8,11 +9,13 @@ export function formatCurrency(value: number): string {
 }
 
 export function formatPercent(value: number): string {
+  if (!isFinite(value)) return '—';
   const sign = value >= 0 ? '+' : '';
   return `${sign}${value.toFixed(2)}%`;
 }
 
 export function formatLargeNumber(value: number): string {
+  if (!isFinite(value)) return '—';
   if (value >= 1e12) return `$${(value / 1e12).toFixed(2)}T`;
   if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
   if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
@@ -21,6 +24,7 @@ export function formatLargeNumber(value: number): string {
 }
 
 export function formatVolume(value: number): string {
+  if (!isFinite(value)) return '—';
   if (value >= 1e9) return `${(value / 1e9).toFixed(2)}B`;
   if (value >= 1e6) return `${(value / 1e6).toFixed(2)}M`;
   if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K`;

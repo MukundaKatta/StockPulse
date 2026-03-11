@@ -22,8 +22,12 @@ interface PriceAlert {
 export default function AlertsPage() {
   const [alerts, setAlerts] = useState<PriceAlert[]>(() => {
     if (typeof window === 'undefined') return [];
-    const stored = localStorage.getItem('sp-alerts');
-    return stored ? JSON.parse(stored) : [];
+    try {
+      const stored = localStorage.getItem('sp-alerts');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
   });
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ symbol: '', targetPrice: '', condition: 'above' as 'above' | 'below' });

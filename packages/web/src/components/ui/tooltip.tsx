@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/formatters';
 
 interface TooltipProps {
@@ -12,6 +12,10 @@ interface TooltipProps {
 export function Tooltip({ content, children, className }: TooltipProps) {
   const [show, setShow] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  useEffect(() => {
+    return () => clearTimeout(timeoutRef.current);
+  }, []);
 
   const handleEnter = () => {
     clearTimeout(timeoutRef.current);

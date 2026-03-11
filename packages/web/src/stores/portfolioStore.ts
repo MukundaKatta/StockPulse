@@ -63,17 +63,25 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
   },
 
   addTrade: async (portfolioId, trade) => {
-    await api.post(`/api/portfolio/${portfolioId}/trades`, trade);
-    toast.success(`${trade.type} ${trade.quantity} ${trade.symbol} added`);
-    await get().fetchHoldings(portfolioId);
-    await get().fetchPortfolios();
+    try {
+      await api.post(`/api/portfolio/${portfolioId}/trades`, trade);
+      toast.success(`${trade.type} ${trade.quantity} ${trade.symbol} added`);
+      await get().fetchHoldings(portfolioId);
+      await get().fetchPortfolios();
+    } catch {
+      toast.error('Failed to add trade');
+    }
   },
 
   deleteTrade: async (portfolioId, tradeId) => {
-    await api.delete(`/api/portfolio/${portfolioId}/trades/${tradeId}`);
-    toast.success('Trade deleted');
-    await get().fetchHoldings(portfolioId);
-    await get().fetchPortfolios();
+    try {
+      await api.delete(`/api/portfolio/${portfolioId}/trades/${tradeId}`);
+      toast.success('Trade deleted');
+      await get().fetchHoldings(portfolioId);
+      await get().fetchPortfolios();
+    } catch {
+      toast.error('Failed to delete trade');
+    }
   },
 
   setActivePortfolio: (id) => set({ activePortfolioId: id }),
