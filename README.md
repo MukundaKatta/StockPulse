@@ -2,7 +2,7 @@
 
 **Live:** <https://mukundakatta.github.io/StockPulse/>
 
-Real-time stock market analytics and portfolio tracking dashboard. StockPulse gives you a focused, inspectable implementation of that idea.
+Real-time stock market analytics and portfolio tracking dashboard.
 
 ## Why StockPulse
 
