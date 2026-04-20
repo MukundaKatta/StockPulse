@@ -59,6 +59,19 @@ export type PortfolioSnapshot = {
   herfindahl: number;            // concentration 0..1
 };
 
+export type ReplayPoint = {
+  asOf: number;
+  equity: number;
+  dayPnl: number;
+};
+
+export type WatchlistEvent = {
+  symbol: string;
+  kind: "priceMove" | "watchlistCross";
+  severity: "info" | "warning" | "high";
+  message: string;
+};
+
 /** FIFO-roll lots against trades to produce the current open-lot set. */
 export function applyTrades(initial: Lot[], trades: Trade[]): { open: Lot[]; realisedPnl: number } {
   const bySymbol = new Map<string, Lot[]>();
@@ -186,4 +199,52 @@ export function snapshot(
 function round(x: number, digits: number): number {
   const m = Math.pow(10, digits);
   return Math.round(x * m) / m;
+}
+
+export function replayPortfolio(
+  openLots: Lot[],
+  quoteHistory: Array<{ asOf: number; quotes: Record<string, Quote> }>,
+  cash: number,
+): ReplayPoint[] {
+  return quoteHistory.map((point) => {
+    const snap = snapshot(openLots, point.quotes, cash, point.asOf);
+    return {
+      asOf: point.asOf,
+      equity: snap.netMarketValue,
+      dayPnl: snap.dayPnl,
+    };
+  });
+}
+
+export function buildWatchlistAlerts(
+  watchlist: Array<{ symbol: string; targetPrice?: number; moveThresholdPct?: number }>,
+  quotes: Record<string, Quote>,
+): WatchlistEvent[] {
+  const events: WatchlistEvent[] = [];
+  for (const item of watchlist) {
+    const quote = quotes[item.symbol];
+    if (!quote) continue;
+    const movePct = quote.previousClose === 0 ? 0 : (quote.last - quote.previousClose) / quote.previousClose;
+    if (item.moveThresholdPct !== undefined && Math.abs(movePct) >= item.moveThresholdPct) {
+      events.push({
+        symbol: item.symbol,
+        kind: "priceMove",
+        severity: Math.abs(movePct) >= 0.08 ? "high" : "warning",
+        message: `${item.symbol} moved ${(movePct * 100).toFixed(1)}% vs previous close`,
+      });
+    }
+    if (item.targetPrice !== undefined) {
+      const crossed = (quote.previousClose < item.targetPrice && quote.last >= item.targetPrice)
+        || (quote.previousClose > item.targetPrice && quote.last <= item.targetPrice);
+      if (crossed) {
+        events.push({
+          symbol: item.symbol,
+          kind: "watchlistCross",
+          severity: "info",
+          message: `${item.symbol} crossed target price ${item.targetPrice.toFixed(2)}`,
+        });
+      }
+    }
+  }
+  return events;
 }
