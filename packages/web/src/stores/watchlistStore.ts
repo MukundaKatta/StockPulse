@@ -1,6 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
+import { isAxiosError } from 'axios';
 import { toast } from 'sonner';
 import api from '@/lib/api';
 import type { Watchlist } from '@/types';
@@ -43,8 +44,8 @@ export const useWatchlistStore = create<WatchlistState>((set, get) => ({
       await api.post(`/api/watchlist/${watchlistId}/items`, { symbol });
       toast.success(`${symbol} added to watchlist`);
       await get().fetchWatchlists();
-    } catch (err: any) {
-      const message = err?.response?.data?.message || 'Failed to add symbol';
+    } catch (err: unknown) {
+      const message = isAxiosError(err) ? err.response?.data?.message || 'Failed to add symbol' : 'Failed to add symbol';
       toast.error(message);
     }
   },

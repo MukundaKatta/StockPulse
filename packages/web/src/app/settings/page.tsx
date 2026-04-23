@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,23 +8,21 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAppStore } from '@/stores/appStore';
-import { Save, Key, ExternalLink, Sun, Moon, Monitor } from 'lucide-react';
+import { Save, Key, ExternalLink, Sun, Moon } from 'lucide-react';
 import { cn } from '@/lib/formatters';
 
 export default function SettingsPage() {
   const { theme, setTheme } = useAppStore();
-  const [keys, setKeys] = useState({
-    alphaVantage: '',
-    finnhub: '',
-    fmp: '',
-  });
-
-  useEffect(() => {
-    const stored = localStorage.getItem('sp-api-keys');
-    if (stored) {
-      try { setKeys((prev) => ({ ...prev, ...JSON.parse(stored) })); } catch {}
+  const [keys, setKeys] = useState(() => {
+    const defaults = { alphaVantage: '', finnhub: '', fmp: '' };
+    if (typeof window === 'undefined') return defaults;
+    try {
+      const stored = localStorage.getItem('sp-api-keys');
+      return stored ? { ...defaults, ...JSON.parse(stored) } : defaults;
+    } catch {
+      return defaults;
     }
-  }, []);
+  });
 
   const handleSave = () => {
     localStorage.setItem('sp-api-keys', JSON.stringify(keys));

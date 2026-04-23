@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAppStore } from '@/stores/appStore';
+import { isAxiosError } from 'axios';
 import api from '@/lib/api';
 import { LineChart, Eye, EyeOff, Check } from 'lucide-react';
 import Link from 'next/link';
@@ -47,8 +48,8 @@ export default function RegisterPage() {
       setUser(data.user);
       toast.success('Account created! Welcome to StockPulse.');
       router.push('/');
-    } catch (err: any) {
-      const message = err?.response?.data?.error?.message || 'Registration failed';
+    } catch (err: unknown) {
+      const message = isAxiosError(err) ? err.response?.data?.error?.message || 'Registration failed' : 'Registration failed';
       toast.error(message);
       if (message.includes('already')) {
         setErrors({ email: 'This email is already registered' });
