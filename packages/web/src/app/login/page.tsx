@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAppStore } from '@/stores/appStore';
+import { isAxiosError } from 'axios';
 import api from '@/lib/api';
 import { LineChart, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
@@ -39,8 +40,8 @@ export default function LoginPage() {
       setUser(data.user);
       toast.success('Welcome back!');
       router.push('/');
-    } catch (err: any) {
-      const message = err?.response?.data?.error?.message || 'Login failed';
+    } catch (err: unknown) {
+      const message = isAxiosError(err) ? err.response?.data?.error?.message || 'Login failed' : 'Login failed';
       toast.error(message);
       if (message.includes('credentials')) {
         setErrors({ password: 'Invalid email or password' });
