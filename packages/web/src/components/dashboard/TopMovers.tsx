@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency, formatPercent, cn } from '@/lib/formatters';
@@ -14,9 +15,13 @@ interface StockMover {
   changePercent: number;
 }
 
-const MOVER_SYMBOLS = ['NVDA', 'META', 'AMD', 'TSLA', 'NFLX', 'COIN', 'PLTR', 'SOFI'];
+const MOVER_SYMBOLS = ['NVDA', 'META', 'AMD', 'TSLA', 'NFLX', 'COIN', 'PLTR', 'SOFI', 'AAPL', 'MSFT'];
+
+type Filter = 'all' | 'gainers' | 'losers';
 
 export function TopMovers() {
+  const [filter, setFilter] = useState<Filter>('all');
+
   const { data: movers, isLoading } = useQuery({
     queryKey: ['top-movers'],
     queryFn: async () => {
@@ -40,6 +45,12 @@ export function TopMovers() {
     staleTime: 60000,
   });
 
+  const filtered = movers?.filter((s) => {
+    if (filter === 'gainers') return s.changePercent > 0;
+    if (filter === 'losers') return s.changePercent < 0;
+    return true;
+  });
+
   return (
     <Card>
       <CardHeader>
@@ -48,6 +59,22 @@ export function TopMovers() {
           Top Movers
         </CardTitle>
       </CardHeader>
+      <div className="mb-2 flex gap-1">
+        {(['all', 'gainers', 'losers'] as Filter[]).map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={cn(
+              'rounded px-2 py-0.5 text-[10px] font-medium capitalize transition-colors',
+              filter === f
+                ? 'bg-indigo-500/10 text-indigo-400'
+                : 'text-gray-600 hover:text-gray-400'
+            )}
+          >
+            {f}
+          </button>
+        ))}
+      </div>
       <div className="space-y-1">
         {isLoading ? (
           Array.from({ length: 5 }).map((_, i) => (
@@ -57,7 +84,7 @@ export function TopMovers() {
             </div>
           ))
         ) : (
-          movers?.slice(0, 6).map((stock) => {
+          filtered?.slice(0, 6).map((stock) => {
             const isPositive = stock.change >= 0;
             return (
               <Link
@@ -84,6 +111,9 @@ export function TopMovers() {
               </Link>
             );
           })
+        )}
+        {!isLoading && filtered?.length === 0 && (
+          <p className="py-3 text-center text-xs text-gray-600">No {filter} today</p>
         )}
       </div>
     </Card>

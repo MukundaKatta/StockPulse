@@ -1,10 +1,14 @@
 import { Server as HttpServer } from 'http';
 import { Server, Socket } from 'socket.io';
 import Redis from 'ioredis';
+import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
 
 let io: Server;
 let redisSub: Redis | null = null;
+
+const SYMBOL_REGEX = /^[A-Z]{1,10}$/;
+const MAX_SUBSCRIPTIONS_PER_CLIENT = 50;
 
 export function initSocketIO(httpServer: HttpServer, corsOrigin: string | string[]): Server {
   io = new Server(httpServer, {
@@ -14,47 +18,63 @@ export function initSocketIO(httpServer: HttpServer, corsOrigin: string | string
       credentials: true,
     },
     transports: ['websocket', 'polling'],
+    pingInterval: 25000,
+    pingTimeout: 20000,
   });
 
-  // Subscribe to Redis pub/sub for price updates
+  // Optional auth middleware - allows unauthenticated but tracks user
+  io.use((socket, next) => {
+    const token = socket.handshake.auth?.token;
+    if (token) {
+      try {
+        const payload = jwt.verify(token, env.JWT_SECRET) as { userId: string };
+        socket.data.userId = payload.userId;
+      } catch {
+        // Allow connection but mark as unauthenticated
+      }
+    }
+    next();
+  });
+
   redisSub = new Redis(env.REDIS_URL);
   redisSub.subscribe('sp:prices', (err) => {
     if (err) console.error('Redis subscribe error:', err);
-    else console.log('Subscribed to sp:prices channel');
   });
 
   redisSub.on('message', (_channel, message) => {
     try {
       const data = JSON.parse(message);
-      io.to(`stock:${data.symbol}`).emit('price-update', data);
-    } catch {
-      // ignore parse errors
-    }
+      if (data.symbol) {
+        io.to(`stock:${data.symbol}`).emit('price-update', data);
+      }
+    } catch {}
   });
 
   io.on('connection', (socket: Socket) => {
-    console.log(`Client connected: ${socket.id}`);
+    let subscriptionCount = 0;
 
-    socket.on('subscribe', (symbols: string[]) => {
-      if (!Array.isArray(symbols)) return;
-      for (const symbol of symbols.slice(0, 50)) {
-        if (typeof symbol === 'string') {
-          socket.join(`stock:${symbol.toUpperCase()}`);
-        }
-      }
-    });
-
-    socket.on('unsubscribe', (symbols: string[]) => {
+    socket.on('subscribe', (symbols: unknown) => {
       if (!Array.isArray(symbols)) return;
       for (const symbol of symbols) {
-        if (typeof symbol === 'string') {
-          socket.leave(`stock:${symbol.toUpperCase()}`);
-        }
+        if (typeof symbol !== 'string') continue;
+        const upper = symbol.toUpperCase();
+        if (!SYMBOL_REGEX.test(upper)) continue;
+        if (subscriptionCount >= MAX_SUBSCRIPTIONS_PER_CLIENT) break;
+        socket.join(`stock:${upper}`);
+        subscriptionCount++;
       }
     });
 
-    socket.on('disconnect', () => {
-      console.log(`Client disconnected: ${socket.id}`);
+    socket.on('unsubscribe', (symbols: unknown) => {
+      if (!Array.isArray(symbols)) return;
+      for (const symbol of symbols) {
+        if (typeof symbol !== 'string') continue;
+        const upper = symbol.toUpperCase();
+        if (socket.rooms.has(`stock:${upper}`)) {
+          socket.leave(`stock:${upper}`);
+          subscriptionCount = Math.max(0, subscriptionCount - 1);
+        }
+      }
     });
   });
 
@@ -70,6 +90,7 @@ export function getIO(): Server {
 
 export function closeSocketIO(): void {
   if (redisSub) {
+    redisSub.unsubscribe('sp:prices');
     redisSub.disconnect();
     redisSub = null;
   }

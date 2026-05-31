@@ -4,6 +4,7 @@ import { API_URL } from './constants';
 const api = axios.create({
   baseURL: API_URL,
   headers: { 'Content-Type': 'application/json' },
+  timeout: 30000,
 });
 
 api.interceptors.request.use((config) => {
@@ -18,13 +19,18 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    // Retry on network errors (max 1 retry)
+    const config = error.config;
+    if (!config._retry && error.code === 'ERR_NETWORK' && config.method === 'get') {
+      config._retry = true;
+      await new Promise((r) => setTimeout(r, 1000));
+      return api(config);
+    }
+
     if (error.response?.status === 401) {
       if (typeof window !== 'undefined') {
-        // Clear both localStorage and Zustand store
         localStorage.removeItem('sp-token');
-        localStorage.removeItem('sp-user');
-        // Dynamically import to avoid circular dependency
         import('@/stores/appStore').then(({ useAppStore }) => {
           useAppStore.getState().logout();
         });

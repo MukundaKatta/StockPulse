@@ -168,3 +168,34 @@ export interface IncomeStatement {
   operatingIncomeRatio: number;
   netIncomeRatio: number;
 }
+
+export interface Alert {
+  id: string;
+  symbol: string;
+  type: 'above' | 'below';
+  targetPrice: number;
+  createdAt: string;
+  triggered: boolean;
+  triggeredAt?: string;
+}
+
+export interface UserSettings {
+  alphaVantageKey?: string;
+  finnhubKey?: string;
+  fmpKey?: string;
+  theme: 'dark' | 'light';
+  defaultChart: string;
+}
+
+export interface MarketIndex {
+  symbol: string;
+  name: string;
+  price: number;
+  change: number;
+  changePercent: number;
+}
+
+export interface BatchQuoteResponse {
+  quotes: Record<string, StockQuote>;
+  errors: string[];
+}

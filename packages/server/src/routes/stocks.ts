@@ -58,4 +58,28 @@ router.get('/:symbol/overview', async (req: Request, res: Response) => {
   res.json({ overview });
 });
 
+// Batch quote endpoint - fetches multiple symbols at once
+router.post('/batch/quotes', async (req: Request, res: Response) => {
+  const { symbols } = z.object({
+    symbols: z.array(z.string().min(1).max(10).toUpperCase()).min(1).max(20),
+  }).parse(req.body);
+
+  const results = await Promise.allSettled(
+    symbols.map((symbol) => alphaVantage.getQuote(symbol))
+  );
+
+  const quotes: Record<string, unknown> = {};
+  const errors: string[] = [];
+
+  results.forEach((result, i) => {
+    if (result.status === 'fulfilled') {
+      quotes[symbols[i]] = result.value;
+    } else {
+      errors.push(symbols[i]);
+    }
+  });
+
+  res.json({ quotes, errors });
+});
+
 export default router;

@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '../config/database';
 import { generateToken, authenticate } from '../middleware/auth';
 import { AppError } from '../middleware/errorHandler';
+import { authRateLimiter } from '../middleware/rateLimiter';
 
 const router = Router();
 
@@ -18,7 +19,7 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
-router.post('/register', async (req: Request, res: Response) => {
+router.post('/register', authRateLimiter(5, 3600), async (req: Request, res: Response) => {
   const { email, password, name } = registerSchema.parse(req.body);
 
   const passwordHash = await bcrypt.hash(password, 12);
@@ -49,7 +50,7 @@ router.post('/register', async (req: Request, res: Response) => {
   });
 });
 
-router.post('/login', async (req: Request, res: Response) => {
+router.post('/login', authRateLimiter(10, 900), async (req: Request, res: Response) => {
   const { email, password } = loginSchema.parse(req.body);
 
   const user = await prisma.user.findUnique({ where: { email } });
@@ -71,6 +72,36 @@ router.get('/me', authenticate, async (req: Request, res: Response) => {
     select: { id: true, email: true, name: true, createdAt: true },
   });
   res.json({ user });
+});
+
+router.patch('/me', authenticate, async (req: Request, res: Response) => {
+  const { name } = z.object({ name: z.string().min(1).max(100) }).parse(req.body);
+  const user = await prisma.user.update({
+    where: { id: req.user!.userId },
+    data: { name },
+    select: { id: true, email: true, name: true },
+  });
+  res.json({ user });
+});
+
+router.post('/change-password', authenticate, async (req: Request, res: Response) => {
+  const { currentPassword, newPassword } = z.object({
+    currentPassword: z.string().min(1),
+    newPassword: z.string().min(8),
+  }).parse(req.body);
+
+  const user = await prisma.user.findUnique({ where: { id: req.user!.userId } });
+  if (!user) throw new AppError(404, 'User not found');
+
+  const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!valid) throw new AppError(401, 'Current password is incorrect');
+
+  const passwordHash = await bcrypt.hash(newPassword, 12);
+  await prisma.user.update({
+    where: { id: req.user!.userId },
+    data: { passwordHash },
+  });
+  res.json({ message: 'Password changed successfully' });
 });
 
 export default router;

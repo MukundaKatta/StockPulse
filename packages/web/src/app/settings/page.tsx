@@ -8,8 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAppStore } from '@/stores/appStore';
-import { Save, Key, ExternalLink, Sun, Moon, Monitor } from 'lucide-react';
+import { Save, Key, ExternalLink, Sun, Moon, Keyboard, Trash2, Download } from 'lucide-react';
 import { cn } from '@/lib/formatters';
+import Link from 'next/link';
 
 export default function SettingsPage() {
   const { theme, setTheme } = useAppStore();
@@ -29,6 +30,31 @@ export default function SettingsPage() {
   const handleSave = () => {
     localStorage.setItem('sp-api-keys', JSON.stringify(keys));
     toast.success('API keys saved successfully');
+  };
+
+  const handleClearData = () => {
+    if (confirm('Are you sure? This will clear all local data including API keys and preferences.')) {
+      localStorage.clear();
+      toast.success('Local data cleared. Reloading...');
+      setTimeout(() => window.location.reload(), 1000);
+    }
+  };
+
+  const handleExportData = () => {
+    const data = {
+      apiKeys: keys,
+      alerts: localStorage.getItem('sp-alerts'),
+      appStore: localStorage.getItem('sp-app-store'),
+      exportedAt: new Date().toISOString(),
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `stockpulse-settings-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Settings exported');
   };
 
   return (
@@ -67,6 +93,33 @@ export default function SettingsPage() {
             </button>
           ))}
         </div>
+      </Card>
+
+      {/* Keyboard Shortcuts */}
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <Keyboard className="mr-1 inline h-4 w-4" />
+            Keyboard Shortcuts
+          </CardTitle>
+        </CardHeader>
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-gray-400">Search stocks</span>
+            <kbd className="rounded border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-gray-300 font-mono">Cmd+K</kbd>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-400">Toggle sidebar</span>
+            <kbd className="rounded border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-gray-300 font-mono">Cmd+B</kbd>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-400">Toggle theme</span>
+            <kbd className="rounded border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-gray-300 font-mono">Cmd+Shift+D</kbd>
+          </div>
+        </div>
+        <Link href="/shortcuts" className="mt-3 inline-flex text-xs text-indigo-400 hover:text-indigo-300">
+          View all shortcuts
+        </Link>
       </Card>
 
       {/* API Keys */}
@@ -136,6 +189,23 @@ export default function SettingsPage() {
           <Button onClick={handleSave}>
             <Save className="h-4 w-4" />
             Save Keys
+          </Button>
+        </div>
+      </Card>
+
+      {/* Data Management */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Data Management</CardTitle>
+        </CardHeader>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" onClick={handleExportData}>
+            <Download className="h-4 w-4" />
+            Export Settings
+          </Button>
+          <Button variant="danger" onClick={handleClearData}>
+            <Trash2 className="h-4 w-4" />
+            Clear Local Data
           </Button>
         </div>
       </Card>

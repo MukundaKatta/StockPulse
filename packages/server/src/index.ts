@@ -23,6 +23,7 @@ import fundamentalRoutes from './routes/fundamentals';
 import portfolioRoutes from './routes/portfolio';
 import watchlistRoutes from './routes/watchlist';
 import newsRoutes from './routes/news';
+import settingsRoutes from './routes/settings';
 
 const app = express();
 const server = createServer(app);
@@ -39,7 +40,8 @@ app.use(cors({
   credentials: true,
 }));
 app.use(compression());
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 app.use(rateLimiter(200, 60));
 
 // Health check
@@ -61,6 +63,7 @@ app.use('/api/stocks', fundamentalRoutes);
 app.use('/api/stocks', newsRoutes);
 app.use('/api/portfolio', portfolioRoutes);
 app.use('/api/watchlist', watchlistRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // Error handler (must be last)
 app.use(errorHandler);

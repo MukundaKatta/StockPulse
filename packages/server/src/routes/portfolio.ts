@@ -72,10 +72,10 @@ router.get('/:id', async (req: Request, res: Response) => {
   }
 
   const holdingsList = Object.values(holdings)
-    .filter((h) => h.quantity > 0)
+    .filter((h) => h.quantity > 0.0001)
     .map((h) => ({
       ...h,
-      avgCost: h.totalCost / h.quantity,
+      avgCost: h.quantity > 0 ? h.totalCost / h.quantity : 0,
     }));
 
   res.json({ portfolio, holdings: holdingsList });
@@ -103,23 +103,31 @@ router.post('/:id/trades', async (req: Request, res: Response) => {
 
   const data = createTradeSchema.parse(req.body);
 
-  // Validate SELL doesn't exceed current holdings
-  if (data.type === 'SELL') {
-    const existingTrades = await prisma.trade.findMany({
-      where: { portfolioId: portfolio.id, symbol: data.symbol },
-    });
-    let currentQty = 0;
-    for (const t of existingTrades) {
-      currentQty += t.type === 'BUY' ? t.quantity : -t.quantity;
-    }
-    if (data.quantity > currentQty) {
-      throw new AppError(400, `Cannot sell ${data.quantity} shares — only ${currentQty} held`);
-    }
+  // Validate date is not in the future
+  if (data.date > new Date()) {
+    throw new AppError(400, 'Trade date cannot be in the future');
   }
 
-  const trade = await prisma.trade.create({
-    data: { ...data, portfolioId: portfolio.id },
+  // Use transaction to prevent race condition on sell validation
+  const trade = await prisma.$transaction(async (tx) => {
+    if (data.type === 'SELL') {
+      const existingTrades = await tx.trade.findMany({
+        where: { portfolioId: portfolio.id, symbol: data.symbol },
+      });
+      let currentQty = 0;
+      for (const t of existingTrades) {
+        currentQty += t.type === 'BUY' ? t.quantity : -t.quantity;
+      }
+      if (data.quantity > currentQty) {
+        throw new AppError(400, `Cannot sell ${data.quantity} shares — only ${currentQty.toFixed(4)} held`);
+      }
+    }
+
+    return tx.trade.create({
+      data: { ...data, portfolioId: portfolio.id },
+    });
   });
+
   res.status(201).json({ trade });
 });
 

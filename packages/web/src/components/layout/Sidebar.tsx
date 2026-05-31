@@ -19,6 +19,8 @@ import {
   Menu,
   Bell,
   BarChart3,
+  Newspaper,
+  Grid3X3,
 } from 'lucide-react';
 import { useEffect } from 'react';
 
@@ -27,6 +29,8 @@ const navItems = [
   { href: '/portfolio', icon: Briefcase, label: 'Portfolio' },
   { href: '/screener', icon: Filter, label: 'Screener' },
   { href: '/compare', icon: BarChart3, label: 'Compare' },
+  { href: '/heatmap', icon: Grid3X3, label: 'Heatmap' },
+  { href: '/news', icon: Newspaper, label: 'News' },
   { href: '/alerts', icon: Bell, label: 'Alerts' },
   { href: '/settings', icon: Settings, label: 'Settings' },
 ];
