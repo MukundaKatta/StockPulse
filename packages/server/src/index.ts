@@ -30,6 +30,9 @@ import newsRoutes from './routes/news';
 import exportRoutes from './routes/export';
 import metricsRoutes from './routes/metrics';
 import settingsRoutes from './routes/settings';
+import searchRoutes from './routes/search';
+import preferencesRoutes from './routes/preferences';
+import notesRoutes from './routes/notes';
 
 const app = express();
 const server = createServer(app);
@@ -84,6 +87,9 @@ app.use('/api/alerts', alertRoutes);
 app.use('/api/export', exportRoutes);
 app.use('/api/metrics', metricsRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/search', searchRoutes);
+app.use('/api/preferences', preferencesRoutes);
+app.use('/api/notes', notesRoutes);
 
 // Error handler (must be last)
 app.use(errorHandler);
