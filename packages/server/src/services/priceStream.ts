@@ -6,6 +6,8 @@ type PriceCallback = (data: { symbol: string; price: number; volume: number; tim
 
 let ws: WebSocket | null = null;
 let reconnectTimer: NodeJS.Timeout | null = null;
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 10;
 const subscribers = new Set<string>();
 const callbacks = new Set<PriceCallback>();
 
@@ -18,16 +20,18 @@ export function offPriceUpdate(callback: PriceCallback): void {
 }
 
 export function subscribeSymbol(symbol: string): void {
-  subscribers.add(symbol);
+  const upper = symbol.toUpperCase();
+  subscribers.add(upper);
   if (ws?.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type: 'subscribe', symbol }));
+    ws.send(JSON.stringify({ type: 'subscribe', symbol: upper }));
   }
 }
 
 export function unsubscribeSymbol(symbol: string): void {
-  subscribers.delete(symbol);
+  const upper = symbol.toUpperCase();
+  subscribers.delete(upper);
   if (ws?.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type: 'unsubscribe', symbol }));
+    ws.send(JSON.stringify({ type: 'unsubscribe', symbol: upper }));
   }
 }
 
@@ -37,7 +41,6 @@ export function connectFinnhubWS(): void {
     return;
   }
 
-  // Close old connection if any to prevent duplicate listeners
   if (ws) {
     ws.removeAllListeners();
     if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
@@ -50,6 +53,7 @@ export function connectFinnhubWS(): void {
 
   ws.on('open', () => {
     console.log('Finnhub WebSocket connected');
+    reconnectAttempts = 0;
     for (const symbol of subscribers) {
       ws!.send(JSON.stringify({ type: 'subscribe', symbol }));
     }
@@ -60,35 +64,30 @@ export function connectFinnhubWS(): void {
       const msg = JSON.parse(rawData.toString());
       if (msg.type === 'trade' && Array.isArray(msg.data)) {
         for (const trade of msg.data) {
+          if (!trade.s || trade.p === undefined) continue;
+
           const priceData = {
             symbol: trade.s,
             price: trade.p,
-            volume: trade.v,
-            timestamp: trade.t,
+            volume: trade.v || 0,
+            timestamp: trade.t || Date.now(),
           };
 
-          // Publish to Redis pub/sub for Socket.IO distribution
-          await redis.publish('sp:prices', JSON.stringify(priceData));
-
-          // Cache latest price
-          await redis.setex(
-            `sp:price:${trade.s}`,
-            60,
-            JSON.stringify(priceData)
-          );
+          await redis.publish('sp:prices', JSON.stringify(priceData)).catch(() => {});
+          await redis.setex(`sp:price:${trade.s}`, 60, JSON.stringify(priceData)).catch(() => {});
 
           for (const cb of callbacks) {
-            cb(priceData);
+            try { cb(priceData); } catch {}
           }
         }
       }
     } catch (err) {
-      console.error('Error processing Finnhub WS message:', err);
+      console.error('Error processing Finnhub WS message:', (err as Error).message);
     }
   });
 
   ws.on('close', () => {
-    console.log('Finnhub WebSocket disconnected — reconnecting in 5s');
+    console.log('Finnhub WebSocket disconnected');
     scheduleReconnect();
   });
 
@@ -99,10 +98,19 @@ export function connectFinnhubWS(): void {
 
 function scheduleReconnect(): void {
   if (reconnectTimer) return;
+  if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+    console.error(`Finnhub WS: max reconnect attempts (${MAX_RECONNECT_ATTEMPTS}) reached`);
+    return;
+  }
+
+  const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 60000);
+  reconnectAttempts++;
+  console.log(`Finnhub WS: reconnecting in ${delay}ms (attempt ${reconnectAttempts})`);
+
   reconnectTimer = setTimeout(() => {
     reconnectTimer = null;
     connectFinnhubWS();
-  }, 5000);
+  }, delay);
 }
 
 export function disconnectFinnhubWS(): void {
@@ -110,7 +118,9 @@ export function disconnectFinnhubWS(): void {
     clearTimeout(reconnectTimer);
     reconnectTimer = null;
   }
+  reconnectAttempts = MAX_RECONNECT_ATTEMPTS;
   if (ws) {
+    ws.removeAllListeners();
     ws.close();
     ws = null;
   }

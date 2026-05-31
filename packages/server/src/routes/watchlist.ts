@@ -45,6 +45,22 @@ router.get('/:id', async (req: Request, res: Response) => {
   res.json({ watchlist });
 });
 
+// Rename watchlist
+router.patch('/:id', async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+  const { name } = z.object({ name: z.string().min(1).max(100) }).parse(req.body);
+  const watchlist = await prisma.watchlist.findFirst({
+    where: { id, userId: req.user!.userId },
+  });
+  if (!watchlist) throw new AppError(404, 'Watchlist not found');
+
+  const updated = await prisma.watchlist.update({
+    where: { id },
+    data: { name },
+  });
+  res.json({ watchlist: updated });
+});
+
 // Delete watchlist
 router.delete('/:id', async (req: Request, res: Response) => {
   const id = req.params.id as string;

@@ -48,11 +48,20 @@ app.use(rateLimiter(200, 60));
 app.get('/api/health', async (_req, res) => {
   const dbOk = await prisma.$queryRaw`SELECT 1`.then(() => true).catch(() => false);
   const redisOk = await redis.ping().then(() => true).catch(() => false);
-  res.json({
-    status: 'ok',
+  const allHealthy = dbOk && redisOk;
+  res.status(allHealthy ? 200 : 503).json({
+    status: allHealthy ? 'ok' : 'degraded',
     timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
     services: { database: dbOk, redis: redisOk },
   });
+});
+
+// Readiness check (for load balancers)
+app.get('/api/ready', async (_req, res) => {
+  const dbOk = await prisma.$queryRaw`SELECT 1`.then(() => true).catch(() => false);
+  if (dbOk) return res.status(200).json({ ready: true });
+  return res.status(503).json({ ready: false });
 });
 
 // Routes

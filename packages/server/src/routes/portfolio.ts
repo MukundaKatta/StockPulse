@@ -81,6 +81,22 @@ router.get('/:id', async (req: Request, res: Response) => {
   res.json({ portfolio, holdings: holdingsList });
 });
 
+// Rename portfolio
+router.patch('/:id', async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+  const { name } = z.object({ name: z.string().min(1).max(100) }).parse(req.body);
+  const portfolio = await prisma.portfolio.findFirst({
+    where: { id, userId: req.user!.userId },
+  });
+  if (!portfolio) throw new AppError(404, 'Portfolio not found');
+
+  const updated = await prisma.portfolio.update({
+    where: { id },
+    data: { name },
+  });
+  res.json({ portfolio: updated });
+});
+
 // Delete portfolio
 router.delete('/:id', async (req: Request, res: Response) => {
   const id = req.params.id as string;

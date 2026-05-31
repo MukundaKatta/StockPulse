@@ -11,6 +11,8 @@ import { NewsPanel } from '@/components/stock/NewsPanel';
 import { EarningsPanel } from '@/components/stock/EarningsPanel';
 import { KeyMetrics } from '@/components/stock/KeyMetrics';
 import { StockInsights } from '@/components/stock/StockInsights';
+import { PeerComparison } from '@/components/stock/PeerComparison';
+import { AnalystRatings } from '@/components/stock/AnalystRatings';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Button } from '@/components/ui/button';
 import { useStockQuote, useStockHistory, useCompanyOverview, useStockNews } from '@/hooks/useStockData';
@@ -120,6 +122,20 @@ export default function StockPage() {
       <ErrorBoundary>
         <StockInsights quote={quote} overview={overview} indicators={indicators} />
       </ErrorBoundary>
+
+      {/* Analyst Ratings */}
+      {overview && (
+        <ErrorBoundary>
+          <AnalystRatings overview={overview} />
+        </ErrorBoundary>
+      )}
+
+      {/* Peer Comparison */}
+      {symbol && (
+        <ErrorBoundary>
+          <PeerComparison symbol={symbol} sector={overview?.Sector} />
+        </ErrorBoundary>
+      )}
 
       {/* Tabs */}
       <div className="border-b border-white/[0.06]">
