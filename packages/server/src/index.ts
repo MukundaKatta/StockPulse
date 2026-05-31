@@ -10,6 +10,8 @@ import { prisma } from './config/database';
 import { redis } from './config/redis';
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter } from './middleware/rateLimiter';
+import { requestLogger } from './middleware/requestLogger';
+import { securityHeaders } from './middleware/securityHeaders';
 import { initSocketIO, closeSocketIO } from './websocket/priceSocket';
 import { connectFinnhubWS, disconnectFinnhubWS } from './services/priceStream';
 import { startPricePoller } from './jobs/pricePoller';
@@ -38,11 +40,13 @@ const corsOrigin = env.NODE_ENV === 'production'
 
 // Middleware
 app.use(helmet());
+app.use(securityHeaders);
 app.use(cors({
   origin: corsOrigin,
   credentials: true,
 }));
 app.use(compression());
+app.use(requestLogger);
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 app.use(rateLimiter(200, 60));
