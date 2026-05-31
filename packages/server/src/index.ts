@@ -28,6 +28,7 @@ import watchlistRoutes from './routes/watchlist';
 import alertRoutes from './routes/alerts';
 import newsRoutes from './routes/news';
 import exportRoutes from './routes/export';
+import metricsRoutes from './routes/metrics';
 import settingsRoutes from './routes/settings';
 
 const app = express();
@@ -81,6 +82,7 @@ app.use('/api/portfolio', portfolioRoutes);
 app.use('/api/watchlist', watchlistRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/export', exportRoutes);
+app.use('/api/metrics', metricsRoutes);
 app.use('/api/settings', settingsRoutes);
 
 // Error handler (must be last)

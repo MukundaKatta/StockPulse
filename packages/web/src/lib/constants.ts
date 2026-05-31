@@ -29,3 +29,33 @@ export const CHART_COLORS = {
   border: 'rgba(255, 255, 255, 0.06)',
   borderActive: 'rgba(99, 102, 241, 0.5)',
 } as const;
+
+export const SECTOR_ETFS: Record<string, string> = {
+  'Technology': 'XLK',
+  'Healthcare': 'XLV',
+  'Financials': 'XLF',
+  'Consumer Discretionary': 'XLY',
+  'Consumer Staples': 'XLP',
+  'Energy': 'XLE',
+  'Materials': 'XLB',
+  'Industrials': 'XLI',
+  'Real Estate': 'XLRE',
+  'Utilities': 'XLU',
+  'Communication Services': 'XLC',
+};
+
+export const POPULAR_STOCKS = [
+  'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META', 'BRK.B',
+  'JPM', 'V', 'UNH', 'JNJ', 'XOM', 'WMT', 'MA', 'PG',
+  'HD', 'CVX', 'MRK', 'ABBV', 'KO', 'PEP', 'AVGO', 'COST',
+] as const;
+
+export const API_ENDPOINTS = {
+  QUOTE: (symbol: string) => `/api/stocks/${symbol}/quote`,
+  HISTORY: (symbol: string) => `/api/stocks/${symbol}/history`,
+  OVERVIEW: (symbol: string) => `/api/stocks/${symbol}/overview`,
+  TECHNICALS: (symbol: string) => `/api/stocks/${symbol}/technicals`,
+  NEWS: (symbol: string) => `/api/stocks/${symbol}/news`,
+  SEARCH: '/api/stocks/search',
+  BATCH_QUOTES: '/api/stocks/batch/quotes',
+} as const;

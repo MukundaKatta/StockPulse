@@ -9,6 +9,7 @@ import { MarketIndices } from '@/components/dashboard/MarketIndices';
 import { RecentlyViewed } from '@/components/dashboard/RecentlyViewed';
 import { TopMovers } from '@/components/dashboard/TopMovers';
 import { MarketBreadth } from '@/components/dashboard/MarketBreadth';
+import { FearGreedIndex } from '@/components/dashboard/FearGreedIndex';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useAppStore } from '@/stores/appStore';
 import { LineChart, TrendingUp, Briefcase, ArrowRight, Bell, BarChart3 } from 'lucide-react';
@@ -162,6 +163,7 @@ export default function DashboardPage() {
           <ErrorBoundary>
             <MarketBreadth />
           </ErrorBoundary>
+          <FearGreedIndex />
         </div>
       </div>
     </div>
