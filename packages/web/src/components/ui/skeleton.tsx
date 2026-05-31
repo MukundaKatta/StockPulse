@@ -33,3 +33,35 @@ export function CardSkeleton() {
     </div>
   );
 }
+
+export function TableSkeleton({ rows = 5, cols = 4 }: { rows?: number; cols?: number }) {
+  return (
+    <div className="space-y-2">
+      <div className="flex gap-4">
+        {Array.from({ length: cols }).map((_, i) => (
+          <Skeleton key={i} className="h-4 flex-1" />
+        ))}
+      </div>
+      {Array.from({ length: rows }).map((_, r) => (
+        <div key={r} className="flex gap-4">
+          {Array.from({ length: cols }).map((_, c) => (
+            <Skeleton key={c} className="h-7 flex-1" />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function StockRowSkeleton() {
+  return (
+    <div className="flex items-center gap-4 py-3 border-b border-white/[0.03]">
+      <Skeleton className="h-5 w-14" />
+      <Skeleton className="h-4 w-24" />
+      <div className="ml-auto flex gap-3">
+        <Skeleton className="h-5 w-16" />
+        <Skeleton className="h-5 w-12" />
+      </div>
+    </div>
+  );
+}

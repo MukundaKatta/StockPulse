@@ -7,6 +7,8 @@ import { usePortfolioQuotes } from '@/hooks/usePortfolioQuotes';
 import { HoldingsTable } from '@/components/portfolio/HoldingsTable';
 import { PerformanceCard } from '@/components/portfolio/PerformanceCard';
 import { AllocationChart } from '@/components/portfolio/AllocationChart';
+import { DiversificationChart } from '@/components/portfolio/DiversificationChart';
+import { GainLossReport } from '@/components/portfolio/GainLossReport';
 import { TradeHistory } from '@/components/portfolio/TradeHistory';
 import { AddTradeModal } from '@/components/portfolio/AddTradeModal';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -91,10 +93,16 @@ export default function PortfolioPage() {
         </div>
 
         {/* Allocation chart */}
-        <div className="lg:col-span-4">
+        <div className="lg:col-span-4 space-y-4">
           <AllocationChart holdings={holdings} />
+          <DiversificationChart holdings={holdings} quotes={quotes} />
         </div>
       </div>
+
+      {/* Gain/Loss Report */}
+      <ErrorBoundary>
+        <GainLossReport holdings={holdings} quotes={quotes} />
+      </ErrorBoundary>
 
       {/* Trade History */}
       {activePortfolioId && (

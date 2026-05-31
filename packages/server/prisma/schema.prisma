@@ -16,6 +16,7 @@ model User {
   updatedAt    DateTime      @updatedAt
   portfolios   Portfolio[]
   watchlists   Watchlist[]
+  alerts       Alert[]
   settings     UserSettings?
 }
 
@@ -81,6 +82,27 @@ model WatchlistItem {
   notes       String?
 
   @@unique([watchlistId, symbol])
+}
+
+model Alert {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  symbol      String
+  condition   AlertCondition
+  targetPrice Float
+  active      Boolean   @default(true)
+  triggered   Boolean   @default(false)
+  triggeredAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([userId, active])
+  @@index([symbol])
+}
+
+enum AlertCondition {
+  ABOVE
+  BELOW
 }
 
 model PriceCache {

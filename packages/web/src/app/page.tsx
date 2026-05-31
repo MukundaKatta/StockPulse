@@ -5,6 +5,8 @@ import { Card } from '@/components/ui/card';
 import { PriceCard } from '@/components/stock/PriceCard';
 import { WatchlistSidebar } from '@/components/watchlist/WatchlistSidebar';
 import { MarketOverview } from '@/components/dashboard/MarketOverview';
+import { MarketIndices } from '@/components/dashboard/MarketIndices';
+import { RecentlyViewed } from '@/components/dashboard/RecentlyViewed';
 import { TopMovers } from '@/components/dashboard/TopMovers';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useAppStore } from '@/stores/appStore';
@@ -59,6 +61,14 @@ export default function DashboardPage() {
           </div>
         </div>
       </motion.div>
+
+      {/* Market Indices */}
+      <ErrorBoundary>
+        <MarketIndices />
+      </ErrorBoundary>
+
+      {/* Recently Viewed */}
+      <RecentlyViewed />
 
       {/* Market Overview */}
       <ErrorBoundary>

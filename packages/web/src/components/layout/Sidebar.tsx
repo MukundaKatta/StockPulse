@@ -21,15 +21,19 @@ import {
   BarChart3,
   Newspaper,
   Grid3X3,
+  Calendar,
+  ListChecks,
 } from 'lucide-react';
 import { useEffect } from 'react';
 
 const navItems = [
   { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/portfolio', icon: Briefcase, label: 'Portfolio' },
+  { href: '/watchlists', icon: ListChecks, label: 'Watchlists' },
   { href: '/screener', icon: Filter, label: 'Screener' },
   { href: '/compare', icon: BarChart3, label: 'Compare' },
   { href: '/heatmap', icon: Grid3X3, label: 'Heatmap' },
+  { href: '/earnings', icon: Calendar, label: 'Earnings' },
   { href: '/news', icon: Newspaper, label: 'News' },
   { href: '/alerts', icon: Bell, label: 'Alerts' },
   { href: '/settings', icon: Settings, label: 'Settings' },

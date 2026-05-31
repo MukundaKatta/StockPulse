@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { CandlestickChart } from '@/components/charts/CandlestickChart';
@@ -23,6 +23,7 @@ import { cn } from '@/lib/formatters';
 import { TIMEFRAMES } from '@/lib/constants';
 import { Star, StarOff, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { addRecentlyViewed } from '@/components/dashboard/RecentlyViewed';
 
 const TABS = ['Technical', 'Fundamental', 'Earnings', 'News'] as const;
 type Tab = typeof TABS[number];
@@ -44,6 +45,10 @@ export default function StockPage() {
   const activeWatchlist = watchlists.find((w) => w.id === activeWatchlistId);
   const isInWatchlist = activeWatchlist?.items.some((item) => item.symbol === symbol);
   const watchlistItem = activeWatchlist?.items.find((item) => item.symbol === symbol);
+
+  useEffect(() => {
+    if (symbol) addRecentlyViewed(symbol, overview?.Name);
+  }, [symbol, overview?.Name]);
 
   const handleToggleWatchlist = async () => {
     if (!symbol || !activeWatchlistId) return;

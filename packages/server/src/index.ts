@@ -15,6 +15,7 @@ import { connectFinnhubWS, disconnectFinnhubWS } from './services/priceStream';
 import { startPricePoller } from './jobs/pricePoller';
 import { startFundamentalSync } from './jobs/fundamentalSync';
 import { startNewsPoller } from './jobs/newsPoller';
+import { startAlertChecker, stopAlertChecker } from './jobs/alertChecker';
 
 import authRoutes from './routes/auth';
 import stockRoutes from './routes/stocks';
@@ -22,7 +23,9 @@ import technicalRoutes from './routes/technicals';
 import fundamentalRoutes from './routes/fundamentals';
 import portfolioRoutes from './routes/portfolio';
 import watchlistRoutes from './routes/watchlist';
+import alertRoutes from './routes/alerts';
 import newsRoutes from './routes/news';
+import exportRoutes from './routes/export';
 import settingsRoutes from './routes/settings';
 
 const app = express();
@@ -72,6 +75,8 @@ app.use('/api/stocks', fundamentalRoutes);
 app.use('/api/stocks', newsRoutes);
 app.use('/api/portfolio', portfolioRoutes);
 app.use('/api/watchlist', watchlistRoutes);
+app.use('/api/alerts', alertRoutes);
+app.use('/api/export', exportRoutes);
 app.use('/api/settings', settingsRoutes);
 
 // Error handler (must be last)
@@ -90,11 +95,13 @@ server.listen(env.PORT, () => {
   startPricePoller();
   startFundamentalSync();
   startNewsPoller();
+  startAlertChecker();
 });
 
 // Graceful shutdown handler
 async function shutdown(signal: string) {
   console.log(`${signal} received. Shutting down...`);
+  stopAlertChecker();
   disconnectFinnhubWS();
   closeSocketIO();
   io.close();
